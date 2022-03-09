@@ -1,0 +1,180 @@
+load "QuaternionIsomorphism.magma";
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//					Utility functions for testing						//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*Returns the Orthogonality defect of base B*/
+ortDef := function(B)
+	n:=NumberOfRows(B);
+    s:=&+[norm(RowSubmatrix(B,i,1)) :i in [1..n]];
+    d:=sgnDegree(Determinant(B));
+    return s-d;
+end function;
+
+/*Tests whether B1 and B2 are matrix basis of the same lattice in Fq(x)^n*/
+sameLat := function(B1,B2)
+	n:=NumberOfRows(B1);
+	M1:=ChangeRing(B1,K);
+    M:=(B2)*M1^(-1);
+    return Degree(Determinant(M)) eq 0 and CanChangeRing(M,R);
+end function;
+
+/*Tests whether f is an involution of the first kind, of the second kind, or not at all*/
+invTest := function(f)
+	A:=Domain(f);
+	assert A eq Codomain(f);
+	if not &and[f(f(x)) eq x: x in Basis(A)] and [f(x*y) eq f(y)*f(x): x,y in Basis(A)] then
+		return 0;
+	end if;
+	L:=BaseField(A);
+	if L eq K or f(L.1) eq L.1 then
+		return 1;
+	elif f(L.1) eq sigma(L.1) then
+		return 2;
+	else
+		return -1; //At this point f should in fact be an involution, so we return -1 instead of 0 to signal that something is wrong.
+	end if;
+end function;
+
+/*Assuming f is known to be a module homomorphism, test if it is in fact an algebra homomorphism*/
+isAlgebraHom:=function(f)
+	A:=Domain(f);
+	B:=Codomain(f);
+	ones:=One(B) eq (One(A) @ f);
+	return ones and &and[((x*y) @ f) eq (x @ f)*(y @ f): x,y in Basis(A)];
+end function;
+
+isQuaternionBasis:=function(A,B)
+	return (B[1] eq One(A)) and (B[2]^2 in BaseField(A)) and (not B[2] in BaseField(A)) and (B[3]^2 in BaseField(A)) and (not B[3] in BaseField(A)) and (B[2]*B[3] eq -B[3]*B[2]) and (B[4] eq B[2]*B[3]);
+end function;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//							Tests							//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//rankOneIdempotent(A) outputs an element of A which is idempotent and has rank one as a matrix.
+testRankOneIdem:=function(n)
+	A:=randIsoMat(K,n);
+	print "Timing the call to rankOneIdempotent:";
+	time e:=rankOneIdempotent(A);
+	printf "We test that the output is a rank one idempotent of A, and obtain %o.\n",e in A and e^2 eq e and Dimension(sub<A | [e*a*e : a in Basis(A)]>) eq 1;
+	return e;
+end function;
+
+
+//invSec outputs either a zero divisor of A, or an involution of the second kind on A.
+//It won't terminate on the Magma online calculator for a degree 4 matrix algebra, because the dimension of the corestriction is then 256 and the structure constants table does not fit in the allowed memory (around 300MB).
+testInvSec:=function(n)
+	A:=randIsoMat(Kext,n);
+	printf "Timing the call to invSec";
+	time d,f:=invSec(A);
+	if d eq A!0 then
+		printf "The routine did not find a zero divisor. It returned a map from A to A. We test that this map is an involution of the second type, and get %o.\n", eval "invTest(f) eq 2";
+	else
+		printf "The routine found a zero divisor of rank %o.\n",Dimension(rideal<A | d>);
+	end if;
+	return d,f;
+end function;
+
+//Tests the lattice reduction subroutine
+testReduceLatBase:=function()
+	repeat
+		B:=Matrix(R,16,16,[randPolyFF(5): _ in [1..256]]);
+	until not IsSingular(B);
+	B1:=B;
+	print "Timing the call to reduceLatBase.";
+	time reduceLatBase(~B);
+	printf "We test that the reduced base generates the same lattice and is reduced, and we get %o.\n",ortDef(B) eq 0 and sameLat(B,B1);
+	return B;
+end function;
+
+//Tests the minimising subroutine for quaternary quadratic forms.
+testMinimise:=function()
+	as:=[randPolyFF(5:nonZero:=true): _ in [1..4]];
+	try
+		bs,T:=minimiseQuaternary(as);
+	catch e
+		print "The form was not minimisable";
+		return true;
+	end try;
+	test:=quaternaryFormIsMinimised(bs);
+	if not test then
+		print as;
+		print [Factorisation(a): a in as];
+	end if;
+	return test;
+end function;
+
+//When given two quaternion algebras, tensorProduct is able to return the standard involution on the tensor product
+//No easy automatic test of the correctness of the tensor product so we simply return the output.
+//Will result in an error if set to quats:=true and L:=Kext because Magma will not compute the discriminant of a quaternion algebra over Kext.
+testTensorProduct:=function(:quats:=false,L:=K)
+	if quats then
+		A:=randIsoQuat(L);
+		B:=randIsoQuat(L);
+	else
+		A:=randIsoMat(L,2);
+		B:=randIsoMat(L,2);
+	end if;
+	print "Timing the call to tensorProduct:";
+	if quats then
+		time C,phiA,phiB,inv:=tensorProduct(A,B:quats:=true);
+		printf "We test whether the map it outputs is indeed an involution of the first kind and get %o.\n", eval "invTest(inv) eq 1";
+	else
+		time C,phiA,phiB:=tensorProduct(A,B);
+	end if;
+	return C,phiA,phiB;
+end function;
+
+corestrictionDiscriminantCompare:=procedure(n)
+	A:=randIsoMat(Kext,n);
+	C:=corestriction(A);
+	BO:=initialAlmostOrder(C);
+	print "When we simply compute the corestriction, here is what discriminant we would start our search of a maximal order with.";
+	print Factorisation(almostDisc(BO));
+	print "Now, we passed a maximal order through the corestriction computation and we obtain this discriminant.";
+	nC:=newCorestriction(A);
+	O:=Order(R,Basis(nC));
+	print Factorisation(Discriminant(O));
+	print "Compare with the discriminant of Rext:";
+	print Factorisation(AbsoluteDiscriminant(Rext));
+end procedure;
+
+tensorProductDiscriminantCompare:=procedure()
+	A,B,N:=randIsoQuatGentle(:verbose:=true);
+	Os:=[MaximalOrderFinite(A),MaximalOrderFinite(B)];
+	nC,_,_,_,nO:=tensorProduct(A,B:quats:=true,Os:=Os);
+	print "The starting almost order for computing a maximal order of the tensor product has discriminant";
+	RnC:=RestrictionOfScalars(nC);
+	print Factorization(almostDisc(initialAlmostOrder(RnC)));
+	print "The norm of the discriminant of the tensor product of the maximal orders we started with factors as";
+	print Factorization(R!Norm(Discriminant(nO)));
+end procedure;
+
+testSolveQuaternaryForm:=function()
+	as:=[randPolyFF(5:nonZero:=true): _ in [1..4]];
+	printf "Going in with the following as: %o.\n",as;
+	S:=solveQuaternaryForm(as);
+	return &+[as[i]*(s^2): i->s in S] eq 0;
+end function;
+
+testSolveQuintenaryForm:=procedure()
+	as:=[randPolyFF(5:nonZero:=true): _ in [1..5]];
+	printf "Going in with the following as: %o.\n",as;
+	S:=solveQuintenaryForm(as);
+	return &+[as[i]*(s^2): i->s in S] eq 0;
+end procedure;
+
+//Testing the whole algorithm
+//Does not terminate in reasonable time. The maximal order computation algorithm needs to be improved.
+completeTest:=procedure()
+	B1,B2:=randIsoQuatGentle(:verbose:=true);
+	f:=main(B1,B2);
+	print "We now have an output to the execution of our main function. We check that it is an algebra homomorphism from B1 to B2:";
+	print B1 eq Domain(f);
+	print B2 eq Codomain(f);
+	print isAlgebraHom(f);
+
+	print "Here is the matrix of the homomorphism we found:";
+	print Matrix(Kext,[ElementToSequence(b @ f): b in Basis(B1)]);
+end procedure;
