@@ -1,5 +1,5 @@
 Z:=IntegerRing();
-p:=3;
+p:=5;
 q:=p^1;
 F:=GF(q);
 K<x>:=RationalFunctionField(F);
@@ -167,7 +167,7 @@ scrambleBasis:=function(A:d:=1,verbose:=false,M:=0)
 	L:=BaseField(A);
 	if M cmpeq 0 then
 		repeat
-			M:=Matrix(L,[[randomFld(L:d:=d): _ in [1..n]]: _ in [1..n]]);
+			M:=Matrix(L,[[Random(2) eq 0 select randomFld(L:d:=d) else 0: _ in [1..n]]: _ in [1..n]]);
 		until Determinant(M) ne 0;
 		if verbose then
 			printf "Scrambling the basis of %o. We're using the following matrix: \n%o\n",A,M;
@@ -436,7 +436,7 @@ interOrders:=function(A,Ofi,Oinf)
 	norms:=[norm(nA!c): c in Basis(Ofi)];
 	goodIndices:=[i: i in [1..Dimension(A)] | norms[i] le 0];
 	SC:=&cat[computeILine(Ofi,i,norms,goodIndices): i in goodIndices];
-	C:=AssociativeAlgebra<F,#SC|SC>;
+	C:=AssociativeAlgebra<F,#SC|SC: Check:=false>;
 	f:=returnMap(C,nA,Ofi,norms,goodIndices);
 	return C,f * Inverse(phi);
 end function;
@@ -515,7 +515,7 @@ tensorProduct:=function(A,B:quats:=false,Ofis:=0,Oinfs:=0)
 	SC:=[[[a*b : b in ElementToSequence(BasisProduct(B,iB,jB)), a in ElementToSequence(BasisProduct(A,iA,jA))]:
 		jB in [1..Dimension(B)], jA in [1..Dimension(A)]]:
 		iB in [1..Dimension(B)], iA in [1..Dimension(A)]];
-	C:=AssociativeAlgebra<k, Dimension(A)*Dimension(B) | SC>;
+	C:=AssociativeAlgebra<k, Dimension(A)*Dimension(B) | SC: Check:=false>;
 	oneA:=Coordinates(A,One(A));
 	oneB:=Coordinates(B,One(B));
 	phiA:=hom<A -> C | [&+[c*Basis(C)[(i-1)*Dimension(B)+j]: j->c in oneB]: i in [1..Dimension(A)]]>;
@@ -543,7 +543,7 @@ tensorProduct:=function(A,B:quats:=false,Ofis:=0,Oinfs:=0)
 end function;
 
 conjugAlg:=function(A)
-	As:=AssociativeAlgebra<Kext, Dimension(A) | [[[sigma(a): a in Coordinates(A,BasisProduct(A,i,j))]: j in [1..Dimension(A)]]:i in [1..Dimension(A)]]>;
+	As:=AssociativeAlgebra<Kext, Dimension(A) | [[[sigma(a): a in Coordinates(A,BasisProduct(A,i,j))]: j in [1..Dimension(A)]]:i in [1..Dimension(A)]]: Check:=false>;
 	AToAs:=map<A -> As | x:->As![sigma(a): a in Coordinates(A,x)], y:->A![sigma(as): as in Coordinates(As,y)]>;
 	return As,AToAs;
 end function;
@@ -1463,7 +1463,7 @@ end function;
 quotient:=function(O,g)
 	d:=Degree(g);
 	SC:=[[&cat[coefficientsUpTo(R!((X^(k+l))*r) mod R!g,d): r in ElementToSequence(O!(z*y))]: k in [0..d-1], y in Basis(O)]: l in [0..d-1], z in Basis(O)];
-	B:=AssociativeAlgebra<F,Dimension(O)*d|SC>;
+	B:=AssociativeAlgebra<F,Dimension(O)*d|SC: Check:=false>;
 	f:=map<O -> B | r:->B!explodeCoeffs(ElementToSequence(r),d), y:->O!regroupCoeffs(Coordinates(B,y),d)>;
 	return B,f;
 end function;
@@ -1522,7 +1522,7 @@ end function;
 matrixAlgebraOverAlg:=function(A:Ofi:=0,Oinf:=0)
 	B:=Basis(A);
 	SC:=[[basisProductM2A(i1,j1,k1,i2,j2,k2,A): k2 in [1..4], i2,j2 in [1..2]]: k1 in [1..4], i1,j1 in [1..2]];
-	M:=AssociativeAlgebra<K, 16 | SC>;
+	M:=AssociativeAlgebra<K, 16 | SC: Check:=false>;
 	
 	if Ofi cmpeq 0 then
 		Ofi:=MaximalOrderFinite(A);
@@ -1710,7 +1710,6 @@ end function;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //						Testing area							//
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //								Bibliography:												//
