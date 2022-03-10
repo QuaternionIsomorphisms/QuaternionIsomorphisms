@@ -126,6 +126,26 @@ testTensorProduct:=function(:quats:=false,L:=K)
 	return C,phiA,phiB;
 end function;
 
+corestrictionCompare:=procedure(n:d:=1)
+	A:=randIsoMat(Kext,n:d:=d);
+
+//With the naive algorithm:
+	T:=Time();
+	C:=corestriction(A:computeOrders:=false);
+	O:=MaximalOrderFinite(C);
+	O:=MaximalOrderInfinite(C);
+	T:=Time(T);
+	printf "With the old method it took %o s.\n",T;
+
+//With the optimised algorithm:
+	T:=Time();
+	C,_,_,_,_,_,Ofi,Oinf:=corestriction(A);
+	Ofi:=MaximalOrder(Ofi);
+	Oinf:=MaximalOrder(Oinf);
+	T:=Time(T);
+	printf "With the new method it took %o s\n",T;
+end procedure;
+
 corestrictionDiscriminantCompare:=procedure(n)
 	A:=randIsoMat(Kext,n);
 	C:=corestriction(A);
