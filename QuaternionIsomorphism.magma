@@ -445,13 +445,13 @@ end function;
 rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0)
 	if Ofi cmpeq 0 then
 		print "Timing the computation of MaximalOrderFinite(A).";
-		time Ofi:=MaximalOrderFinite(A);
+		Ofi:=MaximalOrderFinite(A);
 	else
 		Ofi:=MaximalOrder(Ofi);
 	end if;
 	if Oinf cmpeq 0 then
 		print "Timing the computation of MaximalOrderInfinite(A).";
-		time Oinf:=MaximalOrderInfinite(A);
+		Oinf:=MaximalOrderInfinite(A);
 	else 
 		Oinf:=MaximalOrder(Oinf);
 	end if;
@@ -607,29 +607,29 @@ Output: The corestriction of A as an associative algebra over K, the tensor prod
 corestriction:=function(A:Ofi:=0,Oinf:=0,computeOrders:=true)
 	if computeOrders then
 		if Ofi cmpeq 0 then
-			time Ofi:=MaximalOrderFinite(A);
+			Ofi:=MaximalOrderFinite(A);
 		else
 			Ofi:=MaximalOrder(Ofi);
 		end if;
 		if Oinf cmpeq 0 then
-			time Oinf:=MaximalOrderInfinite(A);
+			Oinf:=MaximalOrderInfinite(A);
 		else
 			Oinf:=MaximalOrder(Oinf);
 		end if;
 	end if;
-	time As,AToAs:=conjugAlg(A);
+	As,AToAs:=conjugAlg(A);
 	
 	if computeOrders then
-		time Ofis:=conjugOrder(Ofi,AToAs);
-		time Oinfs:=conjugOrder(Oinf,AToAs);
+		Ofis:=conjugOrder(Ofi,AToAs);
+		Oinfs:=conjugOrder(Oinf,AToAs);
 	end if;
 
-	time AxAs,phiA,phiAs,sC,OfixOfis,OinfxOinfs:=tensorProduct(A,As:Ofis:=computeOrders select [Ofi,Ofis] else 0,Oinfs:=computeOrders select [Oinf,Oinfs] else 0);
+	AxAs,phiA,phiAs,sC,OfixOfis,OinfxOinfs:=tensorProduct(A,As:Ofis:=computeOrders select [Ofi,Ofis] else 0,Oinfs:=computeOrders select [Oinf,Oinfs] else 0);
 
-	time V,f:=restrictScalarsVS(AxAs);
-	time switch:=hom<V -> V | &cat[[(sigma(k)*v) @ f: k in Basis(Kext)] where v is (((as @@ AToAs) @ phiA)*((a @ AToAs) @ phiAs)): as in Basis(As), a in Basis(A)]>;
+	V,f:=restrictScalarsVS(AxAs);
+	switch:=hom<V -> V | &cat[[(sigma(k)*v) @ f: k in Basis(Kext)] where v is (((as @@ AToAs) @ phiA)*((a @ AToAs) @ phiAs)): as in Basis(As), a in Basis(A)]>;
 
-	time Cor,phi,OCorFi,OCorInf:=descendAlgebra(AxAs,f,OfixOfis,OinfxOinfs,switch: computeOrders:=computeOrders);
+	Cor,phi,OCorFi,OCorInf:=descendAlgebra(AxAs,f,OfixOfis,OinfxOinfs,switch: computeOrders:=computeOrders);
 	return Cor,AxAs,AToAs,phiA,phiAs,phi,OCorFi,OCorInf;
 end function;
 
