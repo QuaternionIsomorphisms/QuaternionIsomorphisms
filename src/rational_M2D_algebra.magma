@@ -1,0 +1,193 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//				Splitting an algebra of the form M2(D) [6, theorem 18]				//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*Returns a list of length d containing the d lowest degree (possibly zero) coefficients of P*/
+coefficientsUpTo:=function(P,d)
+	if P eq 0 then
+		return [0: _ in [1..d]];
+	end if;
+	return (Coefficients(P) cat [0: _ in [0..d-Degree(P)]])[1..d];
+end function;
+
+/*applies the previous function to a list of polynomials*/
+explodeCoeffs:=function(L,d)
+	return &cat[coefficientsUpTo(p,d): p in L];
+end function;
+
+/*Inverse operation to explodeCoeffs*/
+regroupCoeffs:=function(L,d)
+	lL:=#L;
+	assert IsDivisibleBy(lL,d);
+	return [R!L[i..i+d-1]: i in [1..lL by d]];
+end function;
+
+/*Returns the Fq-algebra O/gO for g in Fq[X]*/
+quotient:=function(O,g)
+	d:=Degree(g);
+	SC:=[[&cat[coefficientsUpTo(R!((X^(k+l))*r) mod R!g,d): r in ElementToSequence(O!(z*y))]: k in [0..d-1], y in Basis(O)]: l in [0..d-1], z in Basis(O)];
+	B:=AssociativeAlgebra<F,Dimension(O)*d|SC: Check:=false>;
+	f:=map<O -> B | r:->B!explodeCoeffs(ElementToSequence(r),d), y:->O!regroupCoeffs(Coordinates(B,y),d)>;
+	return B,f;
+end function;
+
+localIndex:=function(O,f)
+	assert IsPrime(f);
+	B:=quotient(O,f);
+	J:=JacobsonRadical(B);
+	C:=quo<B | J>;
+	Z:=Center(C);
+	return ExactQuotient(Dimension(Z),Degree(f));
+end function;
+
+//O is a maximal order in A isomorphic to M2(B), with B a quaternion algebra over K.
+//Outputs the list of finite primes at which B ramifies
+ramificationsWhere:=function(O)
+	toTest:=[f[1]: f in Factorisation(Discriminant(O))];
+	ramifiedPrimes:=[];
+	for f in toTest do
+		if localIndex(O,f) gt 1 then
+			Append(~ramifiedPrimes,f);
+		end if;
+	end for;
+	return ramifiedPrimes;
+end function;
+
+//if B is the basis of quaternion algebra A, gives the index of the matrix B[k]*Ei,j in the basis of M2(A)
+indicesToBasis:=function(i,j,k)
+	return k+(j-1)*4+(i-1)*8;
+end function;
+
+basisToIndices:=function(n)
+	k:=(n mod 4);
+	k:= k eq 0 select 4 else k;
+	n:=ExactQuotient(n-k,4);
+	j:=(n mod 2) + 1;
+	i:=ExactQuotient(n-j+1,2) + 1;
+	return i,j,k;
+end function;
+
+basisProductM2A:=function(i1,j1,k1,i2,j2,k2,A)
+	Result:=[K| 0: _ in [1..16]];
+	if j1 ne i2 then
+		return Result;
+	end if;
+	
+	B:=Basis(A);
+	prod:=ElementToSequence(B[k1]*B[k2]);
+	
+	for k->c in prod do
+		Result[indicesToBasis(i1,j2,k)]:=c;
+	end for;
+	return Result;
+end function;
+
+matrixAlgebraOverAlg:=function(A:Ofi:=0,Oinf:=0)
+	B:=Basis(A);
+	SC:=[[basisProductM2A(i1,j1,k1,i2,j2,k2,A): k2 in [1..4], i2,j2 in [1..2]]: k1 in [1..4], i1,j1 in [1..2]];
+	M:=AssociativeAlgebra<K, 16 | SC: Check:=false>;
+	
+	if Ofi cmpeq 0 then
+		Ofi:=MaximalOrderFinite(A);
+	end if;
+	
+	if Oinf cmpeq 0 then
+		Oinf:=MaximalOrderInfinite(A);
+	end if;
+
+	MOfi:=Order(R,[M!(&cat[[0: _ in [1..i]],Coordinates(A,b),[0: _ in [i+5..16]]]): b in Basis(Ofi), i in [0..12 by 4]]);
+	MOinf:=Order(P,[M!(&cat[[0: _ in [1..i]],Coordinates(A,b),[0: _ in [i+5..16]]]): b in Basis(Oinf), i in [0..12 by 4]]);
+	return M,MOfi,MOinf;
+end function;
+
+//v is an element of a left A-module V, and f is the canonical map from A to GL(V)
+rankOfModuleElement:=function(A,f,v,V,T)
+	W:=sub<V | [V!((a @ f)*(T!v)): a in Basis(A)]>;
+	return Dimension(W);
+end function;
+
+enumPolys:=function(N)
+	T:=CartesianPower(F,N);
+	return ([R![x: x in t]: t in T]);
+end function;
+
+genOmega:=function(ohm)
+	omega:=[];
+	d:=Ceiling(Log(p,ohm+1));
+	return enumPolys(d);
+end function;
+
+incrCouple:=function(i,j,ohm,n)
+	i+:=1;
+	if i gt ohm then
+		i:=1;
+		j+:=1;
+	end if;
+	assert j le n;
+	return i,j;
+end function;
+
+findCyclicModuleGenerator:=function(A,fA,V,d,T,extraCond:B:=0,fB:=0,v:=0)
+	ohm:=extraCond select 2*d+1 else d+1;
+	if not extraCond then
+		v:=V!0;
+	end if;
+	omega:=genOmega(ohm);
+	r:=rankOfModuleElement(A,fA,v,V,T);
+	while not r eq d do
+		i:=1;
+		j:=1;
+		repeat
+			w:=v+omega[i]*BasisElement(V,j);
+			i,j:=incrCouple(i,j,ohm,d);
+			rw:=rankOfModuleElement(A,fA,w,V,T);
+		until rw gt r and ((not extraCond) or rankOfModuleElement(B,fB,w,V,T) eq d);
+		r:=rw;
+		v:=w;
+	end while;
+	return v;
+end function;
+	
+//T is the tensor product of A and B, with B isomorphic to A^op. phiA and phiB are respective injections of A and B in T, and e is a rank one idempotent element of T.
+//This function outputs an isomorphism from A to Bop.
+fromSplitToIsom:=function(A,B,phiA,phiB,T,e)
+	d:=Dimension(A);
+	assert d eq Dimension(B);
+	L:=BaseField(A);
+	W:=Module(T);
+	V:=sub<W | [W!(t*e): t in Basis(T)]>;
+
+	v:=findCyclicModuleGenerator(A,phiA,V,d,T,false);
+	v:=findCyclicModuleGenerator(B,phiB,V,d,v,T,true:B:=A,fB:=phiA,v:=v);
+
+	phiV:=hom<A -> V | [(a @ phiA)*v: a in Basis(A)]>;
+	psiV:=hom<B -> V | [(b @ phiB)*v: b in Basis(B)]>;
+
+	return phiV * Inverse(psiV);
+end function;
+
+zeroDivInM2D:=function(A,ramifications:Ofi:=0,Oinf:=0)
+	if Ofi cmpeq 0 then
+		Ofi:=MaximalOrderFinite(A);
+	else
+		Ofi:=MaximalOrder(Ofi);
+	end if;
+	
+	if Oinf cmpeq 0 then
+		Oinf:=MaximalOrderInfinite(A);
+	else
+		Oinf:=MaximalOrder(Oinf);
+	end if;
+
+	N:=&*ramifications;
+	D:=AssociativeAlgebra(QuaternionAlgebra(N));
+	M2D,OfiM2D,OinfM2D:=matrixAlgebraOverAlg(D);
+	
+	T,phiA,phiM2D,_,OfiT,OinfT:=tensorProduct(A,M2D:Ofis:=[Ofi,OfiM2D],Oinfs:=[Oinf,OinfM2D]);
+	e:=rankOneIdempotent(T:Ofi:=OfiT,Oinf:=OinfT);
+
+	phi:=fromSplitToIsom(A,M2D,phiA,phiM2D,T,e);
+	return BasisElement(M2D,1) @@ phi;
+end function;
+
+

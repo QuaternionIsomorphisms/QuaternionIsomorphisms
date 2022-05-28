@@ -1,0 +1,191 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//				Computing an involution of the second kind					//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*Input: An associative algebra isomorphic to a quaternion algebra over some field
+Output: The standard involution of this algebra.*/
+stdInv:=function(B)
+	return hom<B -> B | [Trace(x)/2 - x: x in Basis(B)]>;
+end function;
+
+tensorProductOrders:=function(O1,O2,phiA,phiB,dA,dB,k)
+	if k eq K then
+		BA:=Basis(O1);
+		BB:=Basis(O2);
+		BO:=[phiA(a)*phiB(b): b in BB, a in BA];
+	 	OC:=Order(BaseRing(O1),BO);
+
+	elif k eq Kext then
+		PBA:=PseudoBasis(O1);
+		PBB:=PseudoBasis(O2);
+		S:=[phiA(PBA[i][2])*phiB(PBB[j][2]): j in [1..dB], i in [1..dA]];
+		I:=[PBA[i][1]*PBB[j][1]: j in [1..dB], i in [1..dA]];
+		OC:=Order(S,I);
+
+	else
+		error "not implemented";
+	end if;
+
+	return OC;
+end function;
+
+/*Input: A and B are algebras over a field k.
+Output: The tensor product of A and B over k as a structure constant algebras, a map from A to it and a map from B to it.
+Parameters: If A and B are quaternion algebras (with standard basis), also returns an involution of the first kind on A(x)B coming from that of A and that of B.*/
+tensorProduct:=function(A,B:quats:=false,Ofis:=0,Oinfs:=0)
+	k:=BaseField(A);
+	assert k eq BaseField(B);
+	SC:=[[[a*b : b in ElementToSequence(BasisProduct(B,iB,jB)), a in ElementToSequence(BasisProduct(A,iA,jA))]:
+		jB in [1..Dimension(B)], jA in [1..Dimension(A)]]:
+		iB in [1..Dimension(B)], iA in [1..Dimension(A)]];
+	C:=AssociativeAlgebra<k, Dimension(A)*Dimension(B) | SC: Check:=false>;
+	oneA:=Coordinates(A,One(A));
+	oneB:=Coordinates(B,One(B));
+	phiA:=hom<A -> C | [&+[c*Basis(C)[(i-1)*Dimension(B)+j]: j->c in oneB]: i in [1..Dimension(A)]]>;
+	phiB:=hom<B -> C | [&+[c*Basis(C)[j+(i-1)*Dimension(B)]: i->c in oneA]: j in [1..Dimension(B)]]>;
+	sC:=0;
+	if quats then
+		invA:=stdInv(A);
+		invB:=stdInv(B);
+		sC:=hom<C -> C | [phiA(invA(a))*phiB(invB(b)) : b in Basis(B), a in Basis(A)]>;
+	end if;
+
+	Ofi:=0;
+	Oinf:=0;
+
+	if Ofis cmpne 0 then
+		Ofi:=tensorProductOrders(Ofis[1],Ofis[2],phiA,phiB,Dimension(A),Dimension(B),k);
+	end if;
+	if Oinfs cmpne 0 then
+		Oinf:=tensorProductOrders(Oinfs[1],Oinfs[2],phiA,phiB,Dimension(A),Dimension(B),k);
+	end if;
+
+	return C,phiA,phiB,sC,Ofi,Oinf;
+end function;
+
+conjugAlg:=function(A)
+	As:=AssociativeAlgebra<Kext, Dimension(A) | [[[sigma(a): a in Coordinates(A,BasisProduct(A,i,j))]: j in [1..Dimension(A)]]:i in [1..Dimension(A)]]: Check:=false>;
+	AToAs:=map<A -> As | x:->As![sigma(a): a in Coordinates(A,x)], y:->A![sigma(as): as in Coordinates(As,y)]>;
+	return As,AToAs;
+end function;
+
+conjugIdeal:=function(I,Ri)
+	return ideal<Ri | [sigma(e): e in Generators(I)]>;
+end function;
+
+conjugOrder:=function(O,AToAs)
+	Ri:=BaseRing(O);
+	PB:=PseudoBasis(O);
+	sO:=Order([AToAs(PB[i][2]): i in [1..Dimension(O)]],[conjugIdeal(PB[i][1],Ri): i in [1..Dimension(O)]]);
+	return sO;
+end function;
+
+restrictScalarsVS:=function(A)
+	V:=VectorSpace(K,2*Dimension(A));
+	return V,map<A -> V | x:->V!(&cat[Eltseq(a): a in Eltseq(x)]), y:->A![y[i]+t*y[i+1]: i in [1..Dimension(V) by 2]]>;
+end function;
+
+fixedPoints:=function(s,B,Ri)
+	iP:=(Matrix([Eltseq(v): v in B]))^(-1);
+	LHS:=Matrix(Ri,[Eltseq(Matrix([Eltseq(s(x) - x)])*iP) : x in B]);
+	return [&+[v[i]*b: i->b in B]: v in Basis(Nullspace(LHS))];
+end function;
+
+descendOrderPB:=function(O)
+	PB:=PseudoBasis(O);
+	Ri:=BaseRing(O);
+	B:=&cat[[t*PB[i][2]: t in Basis(PB[i][1])]: i in [1..Dimension(O)]];
+	return B;
+end function;
+
+//A is an algebra over Kext. f is a map from V to A, where V is A as a vector space over K
+//twist is a semi-linear map, defined over V, and this function outputs the K-subalgebra of A containing the elements fixed by A.
+descendAlgebra:=function(A,f,Ofi,Oinf,twist:computeOrders:=true)
+	if computeOrders then
+		BROfi:=descendOrderPB(Ofi);
+		BPOinf:=descendOrderPB(Oinf);
+
+		BC:=fixedPoints(twist,[a @ f: a in BPOinf],P);
+		BOCFi:=fixedPoints(twist,[a @ f: a in BROfi],R);
+	else
+		BC:=fixedPoints(twist,Basis(Codomain(f)),K);
+	end if;
+
+	C,g:=ChangeBasis(A,[v @@ f: v in BC]);
+	C,h:=ChangeRing(C,K);
+	
+	if computeOrders then
+		OCInf:=Order(P,Basis(C));
+		OCFi:=Order(R,[(o @@ f) @ (g * h): o in BOCFi]);
+	else
+		OCInf:=0;
+		OCFi:=0;
+	end if;
+
+	return C,Inverse(g*h),OCFi,OCInf;
+end function;
+
+/*Input: A central simple algebra A defined over L.
+Output: The corestriction of A as an associative algebra over K, the tensor product AxAs, a map from A to AxAs and a map from Cor(A) to A.*/
+corestriction:=function(A:Ofi:=0,Oinf:=0,computeOrders:=true)
+	if computeOrders then
+		if Ofi cmpeq 0 then
+			Ofi:=MaximalOrderFinite(A);
+		else
+			Ofi:=MaximalOrder(Ofi);
+		end if;
+		if Oinf cmpeq 0 then
+			Oinf:=MaximalOrderInfinite(A);
+		else
+			Oinf:=MaximalOrder(Oinf);
+		end if;
+	end if;
+	As,AToAs:=conjugAlg(A);
+	
+	if computeOrders then
+		Ofis:=conjugOrder(Ofi,AToAs);
+		Oinfs:=conjugOrder(Oinf,AToAs);
+	end if;
+
+	AxAs,phiA,phiAs,sC,OfixOfis,OinfxOinfs:=tensorProduct(A,As:Ofis:=computeOrders select [Ofi,Ofis] else 0,Oinfs:=computeOrders select [Oinf,Oinfs] else 0);
+
+	V,f:=restrictScalarsVS(AxAs);
+	switch:=hom<V -> V | &cat[[(sigma(k)*v) @ f: k in Basis(Kext)] where v is (((as @@ AToAs) @ phiA)*((a @ AToAs) @ phiAs)): as in Basis(As), a in Basis(A)]>;
+
+	Cor,phi,OCorFi,OCorInf:=descendAlgebra(AxAs,f,OfixOfis,OinfxOinfs,switch: computeOrders:=computeOrders);
+	return Cor,AxAs,AToAs,phiA,phiAs,phi,OCorFi,OCorInf;
+end function;
+
+proj:=function(L,k)
+	A:=Universe(L);
+	M:=(Matrix([ElementToSequence(x): x in L]))^(-1);
+	Images:=[];
+	for x in Basis(A) do
+		Append(~Images,&+[(Matrix([Coordinates(A,x)])*M)[1,i]*L[i]: i in [k+1..#L]]);
+	end for;
+	return hom<A -> A | Images>;
+end function;
+
+/*Input: an ideal I of AxAs that is in direct sum with A, coming from an ideal of the Corestriction, as well as the maps phiA,phiAs and AToAs coming from an ideal of the Corestriction.
+Output:	an involution of the second kind on A*/
+invSecFromI:=function(I,AxAs,phiA,phiAs,AToAs)
+	A:=Domain(phiA);
+	B:=Basis(I) cat Basis(Image(phiA));
+	f:=proj(B,Dimension(I));
+	return AToAs * phiAs * f * Inverse(phiA);
+end function;
+
+/*Input: An algebra A over Kext
+Output: A zero divisor in A or an involution of the second kind on A*/
+invSec:=function(A:Ofi:=0,Oinf:=0)
+	Cor,AxAs,AToAs,phiA,phiAs,phiCor,Ofi,Oinf:=corestriction(A:Ofi:=Ofi,Oinf:=Oinf);
+	e:=rankOneIdempotent(Cor:Ofi:=Ofi,Oinf:=Oinf);
+	print "We have succesfully computed a rank one idempotent in the corestriction of A!";
+	I:=rideal<AxAs | phiCor(1-e)>;
+	Inter:= I meet sub<AxAs | [phiA(x) : x in Basis(A)]>;
+	if Dimension(Inter) gt 0 then
+		return (Basis(Inter)[1]) @@ phiA,0;
+	end if;
+	return A!0,invSecFromI(I,AxAs,phiA,phiAs,AToAs);
+end function;
+	

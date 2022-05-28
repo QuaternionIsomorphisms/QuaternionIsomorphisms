@@ -1,0 +1,77 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//					Split 2x2 matrix algebra over Kext [5]					//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+quaternionBasis:=function(A:u:=0)
+	if u eq 0 then
+		u:=Basis(A)[Index([a in Kext : a in Basis(A)], false)];
+		u:=u-Trace(u)/4;
+		if u^2 eq 0 then
+			return true,[u];
+		end if;
+	end if;
+	LHS:=Matrix([Coordinates(A,u*b+b*u): b in Basis(A)]);
+	v:=A!ElementToSequence(Basis(Nullspace(LHS))[1]);
+	if v^2 eq 0 then
+		return true,[v];
+	end if;
+	return false,[One(A),u,v,u*v];
+end function;
+
+nonCentralRationalSquare:=function(B)
+	Lu:=ElementToSequence(Kext!(B[2]^2));
+	Lv:=ElementToSequence(Kext!(B[3]^2));
+	r1:=Lu[1];
+	t1:=Lu[2];
+	r2:=Lv[1];
+	t2:=Lv[2];
+	Q:=Matrix(SparseMatrix(K,6,6,[<1,1,t1>,<2,2,t1*D>,<1,2,2*r1>,<3,3,t2>,<4,4,t2*D>,<3,4,2*r2>,<5,5,-(r1*t2 + t1*r2)>,<6,6,-(r1*t2 + t1*r2)*D>,<5,6,-2*(r1*r2+t1*t2)>]));
+	Sol:=zeroQuadraticForm(Q);
+	Sol:=[Sol[i]+Sol[i+1]*t: i in [1..6 by 2]];
+	return &+[Sol[i]*e: i->e in B[2..4]];
+end function;
+
+/*Input: A quaternionic basis [1,u,v,uv] such that u^2 in K.*/
+anticommRatSquare:=function(B)
+	a:=K!(B[2]^2);
+	a2:=Kext!(B[3]^2);
+	L:=ElementToSequence(a2);
+	b:=L[1];
+	c:=L[2];
+	d:=D;
+	Q:=Matrix(SparseMatrix(K,4,4,[<1,1,c>,<2,2,c*d>,<1,2,2*b>,<3,3,-a*c>,<4,4,-a*c*d>,<3,4,-2*a*b>]));
+	Sol:=zeroQuadraticForm(Q);
+	v:=(Sol[1]+Sol[2]*t)*B[3] + (Sol[3]+Sol[4]*t)*B[4];
+	return [B[1],B[2],v,B[2]*v];
+end function;
+
+findZeroDivQuatOverKext:=function(A);
+	foundZero,B:=quaternionBasis(A);
+	if foundZero then 
+		return B[1];
+	end if;
+	u:=nonCentralRationalSquare(B);
+	foundZero,B:=quaternionBasis(A:u:=u);
+	if foundZero then
+		return B[1];
+	end if;
+
+	B:=anticommRatSquare(B);
+	a:=B[2]^2;
+	b:=B[3]^2;
+	
+	if b^2 eq 0 then
+		return B[3];
+	end if;
+
+	C:=QuaternionAlgebra<K | a,b>;
+	isSplit,_,f:=IsMatrixRing(C:Isomorphism:=true);
+	if isSplit then
+		zeroDiv:=Matrix(K,[[1,0],[0,0]]) @@ f;
+		return &+[zeroDiv[i]*b: i->b in B];
+	end if;
+	x:=zeroQuadraticForm(DiagonalMatrix(K,[a,b,-a*b,-D]));
+	return &+[x[i]/x[4] * b: i->b in B[2..4]] - t;
+end function;
+
+

@@ -1,0 +1,690 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//					Solving quadratic forms [5]						//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//The built in Facpol function returns an error when its input is [].
+goodFacpol:=function(Facto)
+	if Facto eq [] then
+		return R!1;
+	end if;
+	return Facpol(Facto);
+end function;
+
+//First, the functions for minimizing a quaternary form.
+
+//Functions for computing the squarefree parts of the coefficients
+isSquare:=function(Fact)
+	return &and[IsEven(L[2]): L in Fact],[<F[1],F[2] div 2>: F in Fact]; 
+end function;
+
+squareFree:=function(Fact)
+	C:=CartesianProduct(R,Z);
+	SquareFreePart:=[C|];
+	SquareFactor:=[C|];
+	for F in Fact do
+		r:=F[2] mod 2;
+		if r eq 1 then
+			Append(~SquareFreePart,<F[1],1>);
+		end if;
+		s:=F[2]-r;
+		if s ne 0 then
+			Append(~SquareFactor,<F[1],s div 2>);
+		end if;
+	end for;
+	return SquareFreePart,SquareFactor;
+end function;	
+
+squareFreeCoeffs:=function(L)
+	NewCoeffs:=[];
+	Diag:=[K|];
+	for F in L do
+		sqrfree,sqrfact:=squareFree(F);
+		Append(~NewCoeffs,sqrfree);
+		Append(~Diag,goodFacpol(sqrfact));
+	end for;
+	return NewCoeffs,DiagonalMatrix(Diag);
+end function;
+
+//Functions for bringing the factorizations of our squarefree coefficients in one list. It's simpler to manipulate this way.
+addFactor:=function(L,f,i)
+	j:=Index([c[1] eq f: c in L],true);
+	if j eq 0 then
+		return L cat [<f,[i]>];
+	else
+		return L[1..j-1] cat [<f,L[j][2] cat [i]>] cat L[j+1..#L];
+	end if;
+end function;
+
+addFactorisation:=function(L,facto,i)
+	for f in facto do
+		L:=addFactor(L,f[1],i);
+	end for;
+	return L;
+end function;
+
+//The behavior is undefined if the coeffs are not all square free.
+jointFactoTransfo:=function(coeffs)
+	L:=[];
+	for i->facto in coeffs do
+		L:=addFactorisation(L,facto,i);
+	end for;
+	return L;
+end function;
+
+addToCoeffs:=procedure(~coeffs,f,L)
+	for i in L do
+		Append(~coeffs[i],<f,1>);
+	end for;
+end procedure;
+
+splitFactoTransfo:=function(L,n)
+	coeffs:=[[]: _ in [1..n]];
+	for c in L do
+		addToCoeffs(~coeffs,c[1],c[2]);
+	end for;
+	return coeffs;
+end function;
+	
+
+//Now we may clear quartic and cubic factors from the discriminant.
+removeSubsequence:=function(L,I)
+	if I eq [] then
+		return L;
+	end if;
+	return L[1..I[1]-1] cat &cat[L[I[i]+1..I[i+1]-1]: i in [1..#I-1]] cat L[I[#I]+1..#L];
+end function;
+
+complement:=function(L,n)
+	return [i: i in [1..n] | not i in L];
+end function;
+
+clearMajorityFactor:=function(c,n)
+	I:=complement(c[2],n);
+	c:=<c[1],I>;
+	Diag:=[K!1: _ in [1..n]];
+	for i in c[2] do
+		Diag[i]:=1/c[1];
+	end for;
+	return c,DiagonalMatrix(Diag);
+end function;
+
+dealWithSquareFactor:=function(c,as)
+	I:=complement(c[2],4);
+	s:=-as[I[1]]*as[I[2]];
+	j:=JacobiSymbol(s,c[1]);
+	assert j ne 0;
+	if j eq 1 then
+		return c,as,DiagonalMatrix(K,[1: _ in [1..4]]);
+	end if;
+	assert JacobiSymbol(-as[c[2][1]]*as[c[2][2]] div c[1]^2,c[1]) eq 1;
+	D:=[K!1: _ in [1..4]];
+	for i in I do
+		as[i]*:=c[1];
+	end for;
+	for i in c[2] do
+		D[i]*:=c[1];
+		as[i]div:=c[1];
+	end for;
+	M:=DiagonalMatrix(D);
+	return <c[1],I>,as,M;
+end function;
+
+testLeadingCoeffs:=function(as)
+	if #[a : a in as| IsSquare(LeadingCoefficient(a))] ge 2 then
+		return as;
+	end if;
+	r:=F!1;
+	repeat
+		r+:=1;
+	until not IsSquare(r);
+	return [r*a: a in as];
+end function;
+
+sqrfAndCubeFree:=function(as)
+	n:=#as;
+	L:=[];
+	LeadingCoeffs:=[];
+	for a in as do
+		facto,coeff:=Factorisation(R!a);
+		Append(~L,facto);
+		Append(~LeadingCoeffs,coeff);
+	end for;
+	L,M:=squareFreeCoeffs(L);
+	L:=jointFactoTransfo(L);
+	for i->c in L do
+		if #c[2] ge 3 then
+			L[i],T:=clearMajorityFactor(c,n);
+			M*:=T;
+		end if;
+	end for;
+	as:=splitFactoTransfo(L,n);
+	return [LeadingCoeffs[i]*goodFacpol(a): i->a in as],M,L;
+end function;
+	
+minimiseQuaternary:=function(as)
+	as,M,L:=sqrfAndCubeFree(as);
+	for i->c in L do
+		if #c[2] eq 2 then
+			L[i],as,T:=dealWithSquareFactor(c,as);
+			M*:=T;
+		end if;
+	end for;	
+	as:=testLeadingCoeffs(as);
+	return as,M,L;
+end function;
+
+minimiseQuintenary:=function(as)
+	as,T,L:=sqrfAndCubeFree(as);
+	return as,T,L;
+end function;
+
+evensAndOdds:=function(L)
+	Evens:=[];
+	Odds:=[];
+	for i->p in L do
+		if IsEven(Degree(p)) then
+			Append(~Evens,i);
+		else
+			Append(~Odds,i);
+		end if;
+	end for;
+	return Evens,Odds;
+end function;
+
+isIsotropicAtInfinity:=function(as,evenDegrees,oddDegrees)
+	if #evenDegrees ne 2 then
+		return true;
+	end if;
+	l1:=-LeadingCoefficient(as[evenDegrees[1]])*LeadingCoefficient(as[evenDegrees[2]]);	
+	l2:=-LeadingCoefficient(as[oddDegrees[1]])*LeadingCoefficient(as[oddDegrees[2]]);	
+	return IsSquare(l1) or IsSquare(l2);
+end function;
+
+solveConstantForm:=function(as)
+	count:=0;
+	repeat
+		xs:=[Random(F): _ in [1..3]];
+		s:=-(&+[as[i]*x^2: i->x in xs])/as[4];
+		IsSol,Sol:=IsSquare(s);
+		count+:=1;
+	until IsSol or count eq 20;
+	if not IsSol then
+		print "Error in solveConstantForm";
+		return [0,0,0,0];
+	end if;
+	return xs cat [eval"Sol"];
+end function;
+	
+
+solveBinaryForm:=function(as)
+	SolExists,sqrt:=IsSquare(-as[1]/as[2]);
+	if SolExists then
+		return eval"SolExists,[K | Numerator(sqrt),Denominator(sqrt)]";
+	else
+		return false,[];
+	end if;
+end function;	
+
+checkBinaries:=function(as)
+	//printf "About to check them binaries. The as are %o.\n",as;
+	for i:=1 to 4 do
+		for j:=i+1 to 4 do
+			SolExists,Sol:=solveBinaryForm([as[i],as[j]]);
+			if SolExists then
+				//printf "I'm in check binaries and I just found a solution.";
+				return true,Sol,i,j;
+			end if;
+		end for;
+	end for;
+	return false,[],0,0;
+end function;
+
+irreducibleFactors:=function(a,b)
+	a1s:=[c[1]: c in a];
+	b1s:=[c[1]: c in b];
+	return [R| f: f in a1s | f in b1s],[[R| f: f in a1s | not f in b1s],[R| f: f in b1s | not f in a1s]];
+end function;
+
+fsAndgs:=function(fbs)
+	fs,conds1:=irreducibleFactors(fbs[1],fbs[2]);
+	gs,conds2:=irreducibleFactors(fbs[3],fbs[4]);
+	return &*fs * &*gs,conds1 cat conds2;
+end function;
+
+computeFs:=function(bs,fbs)
+	fs,conds1:=irreducibleFactors(fbs[1],fbs[2]);
+	factors:=[[c[1]: c in f]: f in fbs[3..5]];
+	conds2:=[[R|]: _ in [1..3]];
+	prod:=&*bs[3..5];
+	for g in [c[1]: c in Factorisation(prod)] do
+		Mg:=[i: i->b in bs[3..5] | not IsDivisibleBy(b,g)];
+		if #Mg eq 1 then
+			Append(~conds2[Mg[1]],g);
+		end if;
+	end for;
+	return &*fs,conds1,conds2;
+end function;
+
+addTranspo:=procedure(~Perms,~bs,~fbs,i,j)
+	Append(~Perms,<i,j>);
+	swap(i,j,~bs);
+	swap(i,j,~fbs);
+end procedure;
+
+threeToTwo:=function(i,j)
+	Perm:=[<1,i>];
+	if j eq 1 then
+		Append(~Perm,<2,i>);
+	else
+		Append(~Perm,<2,j>);
+	end if;
+	return Perm;
+end function;	
+
+threeToOne:=function(bs,i)
+	j:=Index([IsSquare(LeadingCoefficient(b)): j->b in bs[1..4] | j ne i],true);
+	Perm:=[<1,i>,<j eq 1 select i else j,2>];
+	return Perm;
+end function;
+
+twoToTwo:=function(bs,oddDegrees)	
+	Perm:=[<1,oddDegrees[1]>,<oddDegrees[oddDegrees[2] eq 1 select 1 else 2],3>];
+	cs:=[IsSquare((-1)^((i-1) div 2) * LeadingCoefficient(bs[evalInversePerm(Perm,i)])): i in [1..4]];
+	if cs[2] and cs[4] then
+		eps:=0;
+	elif cs[1] and cs[3] then
+		eps:=1;
+	elif not cs[1] then
+		assert not cs[3] and q mod 4 eq 3;
+		eps:=1;
+		Append(~Perm,<1,3>);
+	else
+		assert not cs[4] and q mod 4 eq 3;
+		eps:=0;
+		Append(~Perm,<2,4>);
+	end if;
+	return Perm,eps;
+end function;
+
+permHousekeeping:=procedure(Perm,~bs,~factorsOfBs)
+	for t in Perm do
+		swap(t[1],t[2],~bs);
+	end for;
+	for i->fact in factorsOfBs do
+		factorsOfBs[i][2]:=[evalPerm(Perm,i): i in fact[2]];
+	end for;
+end procedure;	
+
+polyWithSymb:=function(g,sym)
+	d:=Degree(g);
+	assert sym eq -1 or sym eq 1;
+	repeat
+		f:=randPolyFF(d-1);
+	until JacobiSymbol(f,g) eq sym;
+	return f;
+end function;
+
+goodCRT:=function(L1,L2)
+	if L1 eq [] and L2 eq [] then
+		return R!1;
+	else
+		return CRT(L1,L2);
+	end if;
+end function;
+
+addCondition:=procedure(~rems,~mods,modu,polySymb)
+	Append(~rems,polyWithSymb(modu,JacobiSymbol(polySymb,modu)));
+	Append(~mods,modu);
+end procedure;	
+
+addDoubleCondition:=procedure(~rems,~mods,modu,factor,polySymb1,polySymb2)
+	Jaco2:=JacobiSymbol(factor*polySymb2,modu);
+	repeat
+		P:=polyWithSymb(modu,JacobiSymbol(factor*polySymb1,modu));
+	until JacobiSymbol(P,modu) eq Jaco2;
+		Append(~rems,P);
+		Append(~mods,modu);
+end procedure;
+
+jFromI:=function(i)
+	assert i in IntegerRing();
+	assert i ge 1;
+	assert i le 4;
+	
+	if i le 2 then
+		return 3-i,1;
+	else
+		return 7-i,-1;
+	end if;
+end function;
+
+factorAndModCond:=function(bs,factorsOfBs)
+	factor:=R!1;
+	rems:=[R|];
+	mods:=[R|];
+	
+	for f in factorsOfBs do
+		modu:=f[1];
+		multiples:=f[2];
+		assert #multiples le 2;
+
+		if #multiples eq 2 and (multiples[1]-1) div 2 eq (multiples[2] - 1) div 2 then
+			factor*:=modu;
+		end if;
+	end for;
+
+	for f in factorsOfBs do
+		modu:=f[1];
+		multiples:=f[2];
+		case #multiples:
+			when 1:
+				j,sgn:=jFromI(multiples[1]);
+				addCondition(~rems,~mods,modu,factor*sgn*bs[j]);
+
+			when 2:
+				if IsDivisibleBy(factor,modu) then
+					Append(~rems,1);
+					Append(~mods,modu);
+				else
+					j1,sgn1:=jFromI(multiples[1]);
+					j2,sgn2:=jFromI(multiples[2]);
+
+					addDoubleCondition(~rems,~mods,modu,factor,sgn1*bs[j1],sgn2*bs[j2]);
+				end if;
+		end case;
+	end for;
+	remainder:=goodCRT(rems,mods);
+	return factor,remainder;
+end function;
+
+factorAndModCondQuint:=function(bs,factorsOfBs)
+	factor:=R!1;
+	rems:=[R|];
+	mods:=[R|];
+	for f in factorsOfBs do
+		modu:=f[1];
+		multiples:=f[2];
+		assert #multiples le 2;
+		if #multiples eq 2 and &and[i le 2: i in multiples] then
+			factor*:=modu;
+			Append(~mods,modu);
+			Append(~rems,1);
+		end if;
+	end for;
+			
+	for f in factorsOfBs do
+		modu:=f[1];
+		multiples:=f[2];
+		case #multiples:
+			when 1:
+				i:=multiples[1];
+				if i le 2 then
+					addCondition(~rems,~mods,modu,factor*bs[3-i]);
+				else
+					Append(~rems,1);
+					Append(~mods,modu);
+				end if;
+
+			when 2:
+				i:=Index([i le 2: i in multiples],true);
+				if i eq 0 then
+					addCondition(~rems,~mods,modu,factor*bs[12-&+multiples]);
+				elif not &and[i le 2: i in multiples] then
+					addCondition(~rems,~mods,modu,factor*bs[3-multiples[i]]);
+				end if;
+		end case;
+	end for;
+	
+	rem:=goodCRT(rems,mods);
+	return factor,rem;
+end function;
+			
+randPolyWithCond:=function(g,rem,deg:noBound:=true)
+	assert GreatestCommonDivisor(g,rem) eq 1;
+	N:=deg+Degree(g);
+	bound:=5*N;
+	count:=0;
+	repeat
+		fact:=randPolyFF(deg:precise:=true);
+		fact:=1/(LeadingCoefficient(fact)*LeadingCoefficient(g))*fact;
+		output:=fact*g+rem;
+		count+:=1;
+	until IsPrime(output) or ((not noBound) and count gt bound);
+	assert IsPrime(output);
+	return output;
+end function;
+
+split:=function(bs,factorsOfBs,evenDegrees,oddDegrees)
+	case #evenDegrees:
+		when 0:
+			Perm:=[];
+			eps:=1;
+		when 1:
+			Perm:=threeToOne(bs,evenDegrees[1]);
+			eps:=1;
+		when 2:
+			Perm,eps:=twoToTwo(bs,oddDegrees);
+		when 3: 
+			Perm:=threeToOne(bs,complement(evenDegrees,4)[1]);
+			eps:=0;
+		when 4:
+			Perm:=[];
+			eps:=0;
+	end case;
+
+	permHousekeeping(Perm,~bs,~factorsOfBs);
+
+	factor,remainder:=factorAndModCond(bs,factorsOfBs);
+	bprod:=&* bs;
+	eps:=(eps + Degree(factor)) mod 2;
+	a:=randPolyWithCond(bprod,remainder,3*Degree(bprod)+eps:noBound);
+
+	return bs,Perm,factor*a;
+end function;
+
+splitQuintenary:=function(bs,factorsOfBs,evenDegrees)
+	oddDegrees:=complement(evenDegrees,5);
+	case #evenDegrees:
+		when 0:
+			Perm:=[];
+			eps:=1;
+		when 1:
+			Perm:=[<3,evenDegrees[1]>];
+			eps:=1;
+		when 2:
+			Perm:=threeToTwo(evenDegrees[1],evenDegrees[2]);
+			eps:=0;
+		when 3:
+			Perm:=threeToTwo(oddDegrees[1],oddDegrees[2]);
+			eps:=1;
+		when 4:
+			Perm:=[<3,oddDegrees[1]>];
+			eps:=0;
+		when 5:
+			Perm:=[];
+			eps:=0;
+	end case;
+
+	permHousekeeping(Perm,~bs,~factorsOfBs);
+
+	factor,remainder:=factorAndModCondQuint(bs,factorsOfBs);
+	bprod:=&* bs;
+
+	eps:=(eps + Degree(factor)) mod 2;
+
+	a:=randPolyWithCond(bprod,remainder,3*Degree(bprod)+eps);
+
+	return bs,Perm,factor*a;
+end function;
+
+solFromSolMin:=function(sol,T)
+	L:=Matrix([sol]);
+	//printf "I'm in solFromSolMin. The transformation matrix that I've been given is \n%o \n, so its inverse is \n%o \n and I'm just about to adjust the solution.\n",T,T^(-1);
+//	printf "The solution is %o, by the way.\n",sol;
+	return ElementToSequence(L*T^(-1));
+end function;
+
+rearrangeSol:=function(Sol,Perms)
+	for t in Reverse(Perms) do
+		swap(t[1],t[2],~Sol);
+	end for;
+	return Sol;
+end function;
+
+quaternaryFormIsMinimised:=function(as)
+	Fas:=[Factorisation(a): a in as];
+	if &or[&or[fact[2] ge 2: fact in F]: F in Fas] then
+		//print "someone is not squarefree";
+		return false;
+	end if;
+	F:=jointFactoTransfo(Fas);
+	for fact in F do
+		if #fact[2] gt 3 then
+			//print "The discriminant is not cube free";
+			return false;
+		end if;
+		if #fact[2] eq 2 and JacobiSymbol(-&*[as[i]: i in complement(fact[2],4)],fact[1]) ne 1 then
+			//print "condition 3 is unverified";
+			return false;
+		end if;
+	end for;
+	return #[a: a in as | IsSquare(LeadingCoefficient(a))] ge 2;
+end function;
+
+conicSolvableAtG:=function(as,g)
+	v:=[Valuation(a,g): a in as];
+	pv:=[val mod 2: val in v];
+	case #[p : p in pv | p eq 0]:
+		when 0:
+			return true;
+		when 3:
+			return true;
+		when 1:
+			j:=Index(pv,0);
+		when 2:
+			j:=Index(pv,1);
+	end case;
+	return JacobiSymbol(-&*[a: i->a in as | i ne j] div g^(&+[va : i->va in v | i ne j]),g) eq 1;
+end function;
+
+locallyTestTheSplit:=procedure(bs,f)
+	bs1:=bs[1..2] cat [-f];
+	bs2:=bs[3..4] cat [f];
+	Ff:=Factorisation(f);
+	fbs:=[Factorisation(b): b in bs];
+	for facto in fbs do
+		for c in facto do
+			if not conicSolvableAtG(bs1,c[1]) then
+				//printf "The first conic is not solvable at %o.\n",c[1];
+			end if;	
+			if not conicSolvableAtG(bs2,c[1]) then
+				//printf "The second conic is not solvable at %o.\n",c[1];
+			end if;	
+		end for;
+	end for;
+	for c in Ff do
+		if not conicSolvableAtG(bs1,c[1]) then
+			//printf "The first conic is not solvable at %o.\n",c[1];
+		end if;	
+		if not conicSolvableAtG(bs2,c[1]) then
+			//printf "The second conic is not solvable at %o.\n",c[1];
+		end if;	
+	end for;
+end procedure;
+		
+solveTernaryForm:=function(bs)
+	C:=Conic([K!b: b in bs]);
+	SolExists,P:=HasRationalPoint(C);
+	if SolExists then
+		return true,eval"Coordinates(P)";
+	end if;
+	return false,[];
+end function;
+
+affineCoords:=function(L)
+	n:=#L;
+	return [L[i]/L[n]: i in [1..n-1]];
+end function;
+
+solveQuaternaryForm:=function(as);	
+	bs,T,FactorsOfBs:=minimiseQuaternary(as);
+	//printf "Checking that our form is correctly minimised, we get %o.\n",quaternaryFormIsMinimised(bs);
+	if &and[Degree(b) eq 0: b in bs] then
+		return solveConstantForm(bs);
+	end if;
+	EvenDegrees,OddDegrees:=evensAndOdds(bs);
+	assert isIsotropicAtInfinity(bs,EvenDegrees,OddDegrees);
+	Solved,Sol,i,j:=checkBinaries(bs);
+	if Solved then
+		S:=[K!0: _ in [1..4]];
+		S[i]:=Sol[1];
+		S[j]:=Sol[2];
+		return solFromSolMin(S,T);
+	end if;
+	bs,Perms,f:=split(bs,FactorsOfBs,EvenDegrees,OddDegrees);
+	//printf "According to the output of splitm fsgs*a = %o.\n",f;
+	//locallyTestTheSplit(bs,f);
+	_,Coords1:=solveTernaryForm(bs[1..2] cat [-f]);
+	Sol1:=affineCoords(Coords1);
+	_,Coords2:=solveTernaryForm(bs[3..4] cat [f]);
+	Sol2:=affineCoords(Coords2);
+	Sol:=Sol1 cat Sol2;
+	Sol:=rearrangeSol(Sol,Perms);
+	return solFromSolMin(Sol,T);
+end function;	
+
+solveQuintenaryForm:=function(as)
+	bs,T,factorsOfBs:=minimiseQuintenary(as);
+	EvenDegrees:=[i: i->b in bs | IsEven(Degree(b))];
+	bs,Perms,f:=splitQuintenary(bs,factorsOfBs,EvenDegrees);
+
+	SolExists1,Sol:=solveBinaryForm([b: b in bs[1..2]]);
+	if SolExists1 then
+		Sol:=rearrangeSol(eval "Sol cat [0,0,0]",Perms);
+		return solFromSolMin(Sol,T);
+	end if;
+
+	SolExists2,Sol:=solveTernaryForm(bs[3..5]);
+	if SolExists2 then
+		Sol:=rearrangeSol(eval "[0,0] cat Sol",Perms);
+		return solFromSolMin(Sol,T);
+	end if;
+
+	_,Coords1:=solveTernaryForm(bs[1..2] cat [-f]);
+	Sol1:=affineCoords(Coords1);
+
+	Coords2:=solveQuaternaryForm(bs[3..5] cat [f]);
+	Sol2:=affineCoords(Coords2);
+
+	Sol:=Sol1 cat Sol2;
+	Sol:=rearrangeSol(Sol,Perms);
+	return solFromSolMin(Sol,T);
+end function;	
+
+diagonalizeForm:=function(M);
+	V:=QuadraticSpace(M);
+	B:=SemiOrthogonalBasis(V);
+	return [QuadraticNorm(e): e in B],Matrix([Coordinates(V,e): e in B]);
+end function;
+
+/*Input is the matrix of a quadratic form*/
+zeroQuadraticForm:=function(M)
+	D,T:=diagonalizeForm(M);
+	k:=LCM(denominatorsList(D));
+	D:=[k*d: d in D];
+	case #D:
+		when 1:
+			Sol:=[0];
+		when 2:
+			Sol:=solveBinaryForm(D);
+		when 3:
+			Sol:=solveTernaryForm(D);	
+		when 4:
+			Sol:=solveQuaternaryForm(D);
+		else
+			Sol:=solveQuintenaryForm(D[1..5]);
+	end case;
+	goodSol:=Matrix([Sol cat [0: _ in [6..#D]]])*T;
+	return ElementToSequence(goodSol);
+end function;
+
+

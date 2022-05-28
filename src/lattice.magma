@@ -1,0 +1,58 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//					Lattice reduction functions						//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*Reduces a lattice basis in F_q[X]^n in place, using Lenstra's algorithm from [1]*/
+reduceLatBase := procedure(~B)
+    k:=0;
+	n:=NumberOfRows(B);
+	assert(n eq NumberOfColumns(B));
+    norms:=[norm(RowSubmatrix(B,i,1)) : i in [1..n]];
+    perms:=[];
+    while k lt n do
+        _,i:=Min(norms[k+1..n]);
+        B:=SwapRows(B,k+1,k+i);
+		swap(k+1,k+i,~norms);
+		if k gt 0 then
+			LHS:=Matrix(F,k,k,[[Coefficient(B[i,j],norms[i]) : j in [1..k]] : i in [1..k]]);
+			RHS:=Matrix(F,1,k,[Coefficient(B[k+1,j],norms[k+1]): j in [1..k]]);
+			r:=Solution(LHS,RHS);
+			b:=RowSubmatrix(B,k+1,1) - &+[r[1][i]*(X^(norms[k+1]-norms[i]))*RowSubmatrix(B,i,1) : i in [1..k]];
+			changeRow(~B,b,k+1);
+			N:=norm(b);
+		end if;
+		if k eq 0 or N eq norms[k+1] then
+			_,j0:=Max([sgnDegree(B[k+1,j]): j in [k+1..n]]);
+			B:=SwapColumns(B,k+1,k+j0);
+			Append(~perms,<k+1,k+j0>);
+			k+:=1;
+		else
+			norms[k+1]:=N;
+			i0:=Index([norms[i] gt norms[k+1] : i in [1..k+1]],true)-1;
+			if i0 ne -1 then
+				k:=i0;
+			end if;
+		end if;
+    end while;
+    Reverse(~perms);
+    for T in perms do
+        B:=SwapColumns(B,T[1],T[2]);
+    end for;
+end procedure;
+
+/*Reduces a lattice basis in F_q(X)^n in place, using Proposition 8 in [2]*/
+reduceRatLatBase := procedure(~B)
+	n:=NumberOfColumns(B);
+	assert(n eq NumberOfColumns(B));
+    g:=R!1;
+    for i := 1 to n do
+        for j := 1 to n do
+            g:= Lcm(g,Denominator(B[i,j]));
+        end for;
+    end for;
+    gB:=ChangeRing(g*B,R);
+    reduceLatBase(~gB);
+    B:=(1/g)*gB;
+end procedure;
+
+

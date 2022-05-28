@@ -1,0 +1,118 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////
+//				Functions for random generation of input			//
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*Random polynomial with degree lower or equal to n over our Galois field*/
+randPolyFF := function(n: nonZero:=false,precise:=false)
+	d:=n;
+	repeat
+		if not precise then
+			d := Random(n);
+		end if;
+		repeat
+			dom:=Random(F);
+		until dom ne 0;
+		p := R!([Random(F) :_ in [0..d-1]] cat [dom]);
+	until not (nonZero and (p eq R!0));
+	return p;
+end function;
+
+/*Random rational function with numerator and denominator degree lower or equal to n over our Galois field*/
+randRatFunFF := function(d: nonZero:=false)
+	repeat
+		x:= K!randPolyFF(d)/K!randPolyFF(d: nonZero:=true);
+	until (not nonZero) or x ne 0;
+	return x;
+end function;
+
+randKext := function(d: nonZero:=false)
+	repeat
+		x:=Kext![randRatFunFF(d): _ in [1..2]];
+	until (not nonZero) or x ne 0;
+	return x;
+end function;
+
+randomFld:=function(L: nonZero:=false, d:=2)
+	if L eq K then
+		return randRatFunFF(d);
+	elif L eq Kext then
+		return Kext![randPolyFF(d:nonZero:=nonZero)/randPolyFF(d:nonZero:=true): _ in [1..2]];
+	else
+		error "not implemented";
+	end if;
+end function;
+
+scrambleBasis:=function(A:d:=1,verbose:=false,M:=0)
+	n:=Dimension(A);
+	L:=BaseField(A);
+	if M cmpeq 0 then
+		repeat
+			M:=Matrix(L,[[Random(2) eq 0 select randomFld(L:d:=d) else 0: _ in [1..n]]: _ in [1..n]]);
+		until Determinant(M) ne 0;
+		if verbose then
+			printf "Scrambling the basis of %o. We're using the following matrix: \n%o\n",A,M;
+		end if;
+	end if;
+	B,f:=ChangeBasis(A,[A!ElementToSequence(M[i]): i in [1..n]]);
+	return B,f,M;
+end function;
+
+/*Randomly generates an n^2 dimensional algebra over K isomorphic to the order n square matrix algebra.
+The parameter d is the bound for the degree of the random entries of the matrix used for construction.*/
+randIsoMat:=function(L,n:d:=2,verbose:=false)
+	M:=MatrixAlgebra(L,n);
+	A1,g:=AssociativeAlgebra(M);
+	A,f:=scrambleBasis(A1:d:=d,verbose:=verbose);
+	return A,g*f;
+end function;
+
+randIsoQuat:=function(L:d:=2,nonSplit:=false,scramble:=false)
+	repeat
+		a:=randomFld(L: d:=d, nonZero:=true);
+		b:=randomFld(L: d:=d, nonZero:=true);
+		B:=QuaternionAlgebra<L| a,b>;
+	until not (nonSplit and Discriminant(B) eq 1);
+	Ba:=AssociativeAlgebra(B);
+	if scramble then
+		Ba:=scrambleBasis(Ba:d:=d);
+	end if;
+	if L eq K then
+		return Ba,Discriminant(B);
+	end if;
+	return Ba;
+end function;	
+
+randIsoQuatGentle:=function(:d:=1,degN:=1,verbose:=false)
+	count:=0;
+	repeat
+		N1:=RandomPrimePolynomial(R,degN);
+		count+:=1;
+		if count gt q^degN then
+			degN+:=1;
+		end if;
+	until JacobiSymbol(D,N1) eq 1;
+	repeat
+		N2:=RandomPrimePolynomial(R,degN);
+		count+:=1;
+		if count gt q^degN then
+			degN+:=2;
+		end if;
+	until JacobiSymbol(D,N2) eq 1 and N2 ne N1;
+	N:=N1*N2;
+	A:=QuaternionAlgebra(N);
+	a,b:=StandardForm(A);
+	A:=AssociativeAlgebra(A);
+	B,_,M:=scrambleBasis(A:d:=d);
+	A:=ChangeRing(A,Kext);
+	B:=ChangeRing(B,Kext);
+	if verbose then
+		printf "Generated a quaternion algebra over K with reduced discriminant %o, and lifted it to Kext.\n",N;
+		printf "That is to say, our algebra is (%o,%o) over Kext.\n",a,b;
+		print "I used the following matrix to scramble the basis of B2:";
+		print M;
+	end if;
+	return A,B,N;
+end function;
+	
+
+

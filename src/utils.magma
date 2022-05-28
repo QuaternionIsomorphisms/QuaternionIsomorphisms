@@ -1,0 +1,116 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////
+//					Various utility functions				//
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/*Swaps in place elements of index i and j in list L*/
+
+swap := procedure(i,j,~L)
+    a:=L[i];
+    L[i]:=L[j];
+    L[j]:=a;
+end procedure;
+
+//Evaluate a permutation written as a product of transpositions at integer i
+evalPerm:=function(perm,i)
+	for t in perm do
+		if i eq t[1] then
+			i:=t[2];
+		elif i eq t[2] then
+			i:=t[1];
+		end if;
+	end for;
+	return i;
+end function;
+
+evalInversePerm:=function(perm,i)
+	return evalPerm(Reverse(perm),i);
+end function;
+	
+shift:=function(L)
+	assert L ne [];
+	return [R!0] cat L[1..(#L-1)];
+end function;
+
+/* Returns a sequence containing L and then the N sequences obtained by consecutive shifts of L*/
+jShifts:=function(L,N)
+	bigL:=[L];
+	acc:=L;
+	for j:= 1 to N do
+		acc:=shift(acc);
+		Append(~bigL,acc);
+	end for;
+	return bigL;
+end function;
+
+/*L is a sequence of sequences. Return a sequence of sequences of sequences containing first L and then sequences of shifted elements of L, first once, then twice up to n times*/
+iShifts:=function(L,N)
+	bigL:=[L];
+	acc1:=L;
+	acc2:=[];
+	for i:=1 to N do
+		for M in acc1 do
+			Append(~acc2,shift(M));
+		end for;
+		Append(~bigL,acc2);
+		acc1:=acc2;
+		acc2:=[];
+	end for;
+	return bigL;
+end function;
+
+/*Assuming f is known to be a module homomorphism, test if it is in fact an algebra homomorphism*/
+isAlgebraHom:=function(f)
+	A:=Domain(f);
+	B:=Codomain(f);
+	ones:=One(B) eq (One(A) @ f);
+	return ones and &and[((x*y) @ f) eq (x @ f)*(y @ f): x,y in Basis(A)];
+end function;
+
+/*Replaces the i-th column of M with C*/
+changeRow:=procedure(~M,R,i)
+	assert (NumberOfRows(R) eq 1);
+	n:=NumberOfColumns(R);
+	for j := 1 to n do
+		M[i,j]:=R[1,j];
+	end for;
+end procedure;
+
+/*Returns the difference of the degrees of the numerator and of the denominator
+of r*/
+sgnDegree := function(r)
+    return (Degree(Numerator(r))-Degree(Denominator(r)));
+end function;
+
+
+/*Returns the norm of a line matrix*/
+norm := function(v)
+    return Max([sgnDegree(x) : x in ElementToSequence(v) | x ne 0]);
+end function;
+
+lcmList:=function(L)
+	r:=1;
+	for P in L do
+		r:=Lcm(r,P);
+	end for;
+	return r;
+end function;
+
+denominatorsList:=function(L)
+	return [Denominator(r): r in L];
+end function;
+
+orderFromGens:=function(A,L)
+        D:=LCM(&cat[denominatorsList(Coordinates(A,r)):r in L]);
+        M:=Matrix(R,[Coordinates(A,D*r): r in L]);
+        H:=HermiteForm(M);
+        B:=[A![(1/D)*H[i,j]: j in [1..Dimension(A)]]: i in [1..Dimension(A)]];
+        return Order(R,B);
+end function;
+
+/*Computes the almost order from which to start our climb up to a maximal order*/
+initialOrder:=function(A)
+        D:=LCM(&cat[denominatorsList(L): L in BasisProducts(A)]);
+        B0:=[D*r: r in Basis(A)];
+        return orderFromGens(A,B0 cat [One(A)]);
+end function;
+
+

@@ -1,0 +1,81 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//				Explicit isomorphism commputation for finite algebras				//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//This is an implementation of the algorithm given in part 3 of [4].
+//Returns a subalgebra of C isomorphic to C/J, where J is the Jacobson radical of C.
+WedderburnMalcev:=function(C:Jac:=0)
+	if Jac cmpeq 0 then
+		Jac:=JacobsonRadical(C);
+	end if;
+	BJac:=[C!x : x in Basis(Jac)];
+	n:=Dimension(C);
+	k:=n-#BJac;
+	if k eq n then
+		return C;
+	end if;
+	W,f:=VectorSpace(C);
+	g:=Inverse(f);
+	R:=sub<W | [f(x) : x in BJac]>;
+	V:=Complement(W,R);
+	NewBase:=[g(x):x in Basis(V)] cat BJac;
+	A:=ChangeBasis(C,NewBase);
+	W,f:=VectorSpace(A);
+	g:=Inverse(f);
+	BR:=Basis(A)[k+1..n];
+	BV:=Basis(A)[1..k];
+	dV:=k;
+	R:=sub<W | [f(x) : x in BR]>;
+	V:=Complement(W,R);
+	B:=Basis(A)[1..k];
+	repeat
+		Rtmp:=sub<R | [f(x*y) : x in Basis(A)[k+1..n], y in BR] cat [f(y*x) : x in Basis(A)[k+1..n], y in BR]>;
+		V:=Complement(R,Rtmp);
+		R:=Rtmp;
+		BV:=[g(x):x in Basis(V)];
+		BR:=[g(x):x in Basis(R)];
+		dV:=Dimension(V);
+		LHS:=Matrix([&cat[Coordinates(W,ReduceVector(R,f(B[i]*d[j] + d[i]*B[j] - &+[BasisProduct(A,i,j)[s]*d[s] : s in [1..k]]))) : i,j in [1..k]] :
+		d in [[A!0 : _ in [1..(i-1)]] cat [d] cat [A!0 : _ in [i+1..k]]: d in BV, i in [1..k]]]);
+		RHS:= Matrix([&cat[Coordinates(W,ReduceVector(R,f(&+[BasisProduct(A,i,j)[s]*B[s] : s in [1..k]] - B[i]*B[j]))) : i,j in [1..k]]]);
+		Sol:=Solution(LHS,RHS);
+		for i := 1 to k do
+			B[i]+:=&+[Sol[1][(i-1)*dV+j]*BV[j] : j in [1..dV]];
+		end for;
+	until Dimension(R) eq 0;
+	return sub<C | [&+[x[i]*e : i->e in NewBase] : x in B]>;
+end function;
+
+
+//A is a simple algebra over F
+//Returns an isomorphism from M_n(k) to A, with k the center of A.*/
+explIso:=function(A)
+	rcA,frcA:=AlgebraOverCenter(A);
+	k:=BaseField(rcA);
+	_,n:=IsSquare(Dimension(rcA));
+	I:=MinimalLeftIdeals(rcA:Limit:=1)[1];
+	LHS:=Matrix([&cat[Coordinates(I,x*y): y in Basis(I)]: x in Basis(rcA)]);
+	phi:=hom<MatrixAlgebra(k,n) -> rcA | M :-> rcA!ElementToSequence(Solution(LHS,Matrix(1,n^2,ElementToSequence(M))))>;
+	return phi * frcA;
+end function;
+
+//A is a simple algebra over F.
+//Returns a complete orthogonal decomposition in primitive idempotents of A
+decomposeSimple:=function(A)
+	if IsCommutative(A) then
+		return [A!1];
+	end if;
+	f:=explIso(A);	
+	M:=Domain(f);
+	n:=Degree(M);
+	return [f(x) : x in Basis(M)[1..n^2 by n+1]];
+end function;
+
+//A is a finite algebra
+//Returns a complete orthogonoal system of primitive idempotents of A
+orthSysOfPrimIdems:=function(A)
+	W:=WedderburnMalcev(A);
+	Ies := DirectSumDecomposition(W);
+	return &cat[[A!x : x in decomposeSimple(I)] : I in Ies];
+end function;
+	

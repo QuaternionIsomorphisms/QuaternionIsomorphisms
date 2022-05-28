@@ -1,0 +1,36 @@
+//First, you may pick the following parameters:
+//The prime number p is the characteristic of the base function field where our algebras live. Note that this implementation currently does not support even characteristic.
+p:=3;
+//The natural number n is the degree of the finite field underlying our base function field.
+n:=1;
+//The natural number deg is the degree of the irreducible polynomial we use for generating a quadratif extension of the rational function field K. Note that we could use any polynomial or rational function instead of an irreducible polynomial. We do so to reduce the number of ramified places in order to shorten an already lengthy execution.
+deg:=2;
+
+q:=p^1;
+F:=GF(q);
+Z:=IntegerRing();
+K<x>:=RationalFunctionField(F);
+R<X>:=IntegerRing(K);
+P:=ValuationRing(K);
+PK<T>:=PolynomialRing(K);
+
+D:=RandomIrreduciblePolynomial(F,deg);
+Kext<t>:=ext<K | T^2-D>;
+Rext:=IntegralClosure(R,Kext);
+Pext:=IntegralClosure(P,Kext);
+Gal:=Automorphisms(Kext);
+sigma:=Gal[Index([s(x) eq x and &and[s(y) eq y: y in Basis(F)] and not IsIdentity(s) : s in Gal],true)];
+printf "K is the rational function field over the finite field GF(%o). Its characteristic is %o. \n",q,p;
+printf "We randomly generated a quadratic extension of K. It was formed by taking the square-root of a polynomial of degree %o.\n",deg;
+
+load "src/utils.magma";
+load "src/random_gen.magma";
+load "src/lattice.magma";
+load "src/finite_alg.magma";
+load "src/rational_alg.magma";
+load "src/involution.magma";
+load "src/quadratic_forms.magma";
+load "src/deg_2_algebra.magma";
+load "src/rational_M2D_algebra.magma";
+load "src/main.magma";
+load "src/test_functions.magma";

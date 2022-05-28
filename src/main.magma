@@ -1,0 +1,81 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//						Main task							//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+leftUnit:=function(I)
+	k:=BaseField(I);
+	LHS:=Matrix(k,[&cat[Coordinates(I,i*x): x in Basis(I)]: i in Basis(I)]);
+	RHS:=Matrix(k,[ElementToSequence(ScalarMatrix(Dimension(I),k!1))]);
+	e:=I!ElementToSequence(Solution(LHS,RHS));
+
+	return e;
+end function;
+	
+zeroDivToIdempotent:=function(A,z)
+	_,r:=IsSquare(Dimension(A));
+	I:=rideal<A | z>;
+	return A!leftUnit(I),ExactQuotient(Dimension(I),r);
+end function;
+
+zeroDivToRankOneIdempotent:=function(A,z)
+	e,rank:=zeroDivToIdempotent(A,z);
+	printf "We have a zero divisor of rank %o. We will use it to find a rank one idempotent.\n",rank;
+	case rank:
+		when 1:
+			return e;
+		when 3:
+			return 1-e;
+		when 2:
+			B:=sub<A | [e*a*e: a in Basis(A)]>;
+			z:=findZeroDivQuatOverKext(B);
+			e:=zeroDivToIdempotent(B,z);
+			return A!e;
+	end case;
+end function;
+
+main:=function(B1,B2)
+	Ofis:=[MaximalOrderFinite(B1),MaximalOrderFinite(B2)];
+	Oinfs:=[MaximalOrderInfinite(B1),MaximalOrderInfinite(B2)];
+	A,phi1,phi2,invo1stKind,Ofi,Oinf:=tensorProduct(B1,B2:quats:=true,Ofis:=Ofis,Oinfs:=Oinfs);
+
+	print "We have computed the tensor product A of B1 and B2, and now we approach the computational bottleneck:";
+	print "We will compute the corestriction of A and compute an explicit isomorphism from it to a matrix algebra.";
+	zeroDiv,invo2ndKind:=invSec(A:Ofi:=Ofi,Oinf:=Oinf);
+
+	if zeroDiv eq 0 then
+		print "We found an involution of the second kind over A.";
+
+		print "Here we print the image of the basis elements of A by this involution.";
+		print "For each element a, we print the image of a and that of t*a.";
+		for a in Basis(A) do
+			print a @ invo2ndKind;
+			print (t*a) @ invo2ndKind;
+		end for;
+
+		twistedAction:=invo1stKind * invo2ndKind;
+		V,f:=restrictScalarsVS(A);
+
+		AK,goUp,OfiAK,OinfAK:=descendAlgebra(A,f,Ofi,Oinf,Inverse(f) * twistedAction * f);
+		
+		ramifiedFinitePlaces:=ramificationsWhere(AK);
+		print "Using our involutions, we found a K-subalgebra of A, we call it AK.";
+		if ramifiedFinitePlaces eq [] then
+			print "AK happens to be split. We find a rank one idempotent and send it back up!";
+			e:=rankOneIdempotent(A:Ofi:=OfiAK,Oinf:=OinfAK);
+			e := e @ goUp;
+			return fromSplitToIsom(B1,B2,phi1,phi2,A,e) * stdInv(B2);
+		end if;
+		printf "AK is not split: it ramifies at the following primes: %o.\n",ramifiedFinitePlaces;
+		zeroDiv:=zeroDivInM2D(AK,ramifiedFinitePlaces:Ofi:=OfiAK,Oinf:=OinfAK) @ goUp;
+		print "We found a zero divisor in AK, which we sent back up to A.";
+	else
+		print "From the splitting of the corestriction of A, we directly found a zero divisor in A.";
+	end if;
+
+	print "Our zeroDivisor in A is the following element:";
+	print zeroDiv;
+	
+	e:=zeroDivToRankOneIdempotent(A,zeroDiv);
+	return fromSplitToIsom(B1,B2,phi1,phi2,A,e) * stdInv(B2);
+end function;
+	
