@@ -148,14 +148,13 @@ end procedure;
 
 corestrictionDiscriminantCompare:=procedure(n)
 	A:=randIsoMat(Kext,n);
-	C:=corestriction(A);
-	BO:=initialAlmostOrder(C);
+	C:=corestriction(A:computeOrders:=false);
+	O:=initialOrder(C);
 	print "When we simply compute the corestriction, here is what discriminant we would start our search of a maximal order with.";
-	print Factorisation(almostDisc(BO));
-	print "Now, we passed a maximal order through the corestriction computation and we obtain this discriminant.";
-	nC:=newCorestriction(A);
-	O:=Order(R,Basis(nC));
 	print Factorisation(Discriminant(O));
+	nC,_,_,_,_,_,Ofi:=corestriction(A);
+	print "Now, we passed a maximal order through the corestriction computation and we obtain this discriminant.";
+	print Factorisation(Discriminant(Ofi));
 	print "Compare with the discriminant of Rext:";
 	print Factorisation(AbsoluteDiscriminant(Rext));
 end procedure;
@@ -166,7 +165,7 @@ tensorProductDiscriminantCompare:=procedure()
 	nC,_,_,_,nO:=tensorProduct(A,B:quats:=true,Os:=Os);
 	print "The starting almost order for computing a maximal order of the tensor product has discriminant";
 	RnC:=RestrictionOfScalars(nC);
-	print Factorization(almostDisc(initialAlmostOrder(RnC)));
+	print Factorization(Discriminant(initialOrder(RnC)));
 	print "The norm of the discriminant of the tensor product of the maximal orders we started with factors as";
 	print Factorization(R!Norm(Discriminant(nO)));
 end procedure;
@@ -182,7 +181,8 @@ testSolveQuintenaryForm:=procedure()
 	as:=[randPolyFF(5:nonZero:=true): _ in [1..5]];
 	printf "Going in with the following as: %o.\n",as;
 	S:=solveQuintenaryForm(as);
-	return &+[as[i]*(s^2): i->s in S] eq 0;
+	printf "We got the following solution: %o.\n",S;
+	printf "Evaluation of the form at the solution gives : %o. Obviously, this should be 0.\n",&+[as[i]*(s^2): i->s in S];
 end procedure;
 
 //Testing the whole algorithm

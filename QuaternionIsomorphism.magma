@@ -117,6 +117,20 @@ denominatorsList:=function(L)
 	return [Denominator(r): r in L];
 end function;
 
+orderFromGens:=function(A,L)
+        D:=lcmList(&cat[denominatorsList(Coordinates(A,r)):r in L]);
+        M:=Matrix(R,[Coordinates(A,D*r): r in L]);
+        H:=HermiteForm(M);
+        B:=[A![(1/D)*H[i,j]: j in [1..Dimension(A)]]: i in [1..Dimension(A)]];
+        return Order(R,B);
+end function;
+
+/*Computes the almost order from which to start our climb up to a maximal order*/
+initialOrder:=function(A)
+        D:=LCM(&cat[denominatorsList(L): L in BasisProducts(A)]);
+        B0:=[D*r: r in Basis(A)];
+        return orderFromGens(A,B0 cat [One(A)]);
+end function;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //					Generating random examples						//
