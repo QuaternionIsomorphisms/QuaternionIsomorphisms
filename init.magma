@@ -1,12 +1,12 @@
 //First, you may pick the following parameters:
 //The prime number p is the characteristic of the base function field where our algebras live. Note that this implementation currently does not support even characteristic.
-p:=3;
+p:=5;
 //The natural number n is the degree of the finite field underlying our base function field.
 n:=1;
 //The natural number deg is the degree of the irreducible polynomial we use for generating a quadratif extension of the rational function field K. Note that we could use any polynomial or rational function instead of an irreducible polynomial. We do so to reduce the number of ramified places in order to shorten an already lengthy execution.
 deg:=2;
 
-q:=p^1;
+q:=p^n;
 F:=GF(q);
 Z:=IntegerRing();
 K<x>:=RationalFunctionField(F);

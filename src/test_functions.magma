@@ -50,16 +50,21 @@ end function;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //							Tests							//
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//rankOneIdempotent(A) outputs an element of A which is idempotent and has rank one as a matrix.
-testRankOneIdem:=function(n)
-	A:=randIsoMat(K,n);
-	print "Timing the call to rankOneIdempotent:";
-	time e:=rankOneIdempotent(A);
-	printf "We test that the output is a rank one idempotent of A, and obtain %o.\n",e in A and e^2 eq e and Dimension(sub<A | [e*a*e : a in Basis(A)]>) eq 1;
-	return e;
-end function;
 
-
+testExplicitIsomorphism:=procedure(n:file:=0)
+	A:=randIsoMat(K,n:verbose:=true);
+	print "Timing the call to explicitIsomorphism:";
+	T:=Time();
+	f:=explicitIsomorphism(A:verbose:=true);
+	T:=Time(T);
+	printf "The execution of explicitIsomorphism took %o s.\n",T;
+	printf "We test that the output is an algebra homomorphism and get %o.\n",isAlgebraHom(f);
+	d:=n^2;
+	M:=Matrix(K,d,d,[ElementToSequence(x @ f): x in Basis(A)]);
+	printf "We check that the output is an isomorphism and get %o.\n",IsUnit(M);
+	printf "For reference, the output is given by the following matrix:\n%o\n",M;
+end procedure;
+	
 //invSec outputs either a zero divisor of A, or an involution of the second kind on A.
 //It won't terminate on the Magma online calculator for a degree 4 matrix algebra, because the dimension of the corestriction is then 256 and the structure constants table does not fit in the allowed memory (around 300MB).
 testInvSec:=function(n)

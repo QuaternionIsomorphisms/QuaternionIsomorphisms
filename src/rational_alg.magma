@@ -64,16 +64,24 @@ interOrders:=function(A,Ofi,Oinf)
 end function;
 
 /*Given an associative K-algebra A which is isomorphic to a 2x2 matrix algebra over K, returns a rank 1 idempotent element of A*/
-rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0)
+rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
 	if Ofi cmpeq 0 then
-		print "Timing the computation of MaximalOrderFinite(A).";
-		Ofi:=MaximalOrderFinite(A);
+		if verbose then
+			print "Timing the computation of MaximalOrderFinite(A):";
+			time Ofi:=MaximalOrderFinite(A);
+		else
+			Ofi:=MaximalOrderFinite(A);
+		end if;
 	else
 		Ofi:=MaximalOrder(Ofi);
 	end if;
 	if Oinf cmpeq 0 then
-		print "Timing the computation of MaximalOrderInfinite(A).";
-		Oinf:=MaximalOrderInfinite(A);
+		if verbose then
+			print "Timing the computation of MaximalOrderInfinite(A):";
+			time Oinf:=MaximalOrderInfinite(A);
+		else
+			Oinf:=MaximalOrderInfinite(A);
+		end if;
 	else 
 		Oinf:=MaximalOrder(Oinf);
 	end if;
@@ -91,8 +99,8 @@ idemToIso:=function(A,e)
 	return hom<A -> M| Ims> * Inverse(f);
 end function;
 
-explicitIsomorphism:=function(A:Ofi:=0,Oinf:=0)
-	e:=rankOneIdempotent(A:Ofi:=Ofi,Oinf:=Oinf);
+explicitIsomorphism:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
+	e:=rankOneIdempotent(A:Ofi:=Ofi,Oinf:=Oinf,verbose:=verbose);
 	return idemToIso(A,e);
 end function;
 

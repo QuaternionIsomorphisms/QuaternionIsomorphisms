@@ -1,0 +1,38 @@
+print "We will benchmark the use of the function explicitIsomorphism on a degree 3 matrix algebra over the field K = F_5(T).";
+read filename, "Please indicate a path for recording the output of the computation. Note that the file will be overwritten. ";
+SetOutputFile(filename:Overwrite:=true);
+
+p:=5;
+n:=1;
+deg:=2;
+
+q:=p^n;
+F:=GF(q);
+Z:=IntegerRing();
+K<x>:=RationalFunctionField(F);
+R<X>:=IntegerRing(K);
+P:=ValuationRing(K);
+PK<T>:=PolynomialRing(K);
+
+D:=RandomIrreduciblePolynomial(F,deg);
+Kext<t>:=ext<K | T^2-D>;
+Rext:=IntegralClosure(R,Kext);
+Pext:=IntegralClosure(P,Kext);
+Gal:=Automorphisms(Kext);
+sigma:=Gal[Index([s(x) eq x and &and[s(y) eq y: y in Basis(F)] and not IsIdentity(s) : s in Gal],true)];
+printf "K is the rational function field over the finite field GF(%o). Its characteristic is %o. \n",q,p;
+printf "We randomly generated a quadratic extension of K. It was formed by taking the square-root of a polynomial of degree %o.\n",deg;
+
+load "src/utils.magma";
+load "src/random_gen.magma";
+load "src/lattice.magma";
+load "src/finite_alg.magma";
+load "src/rational_alg.magma";
+load "src/involution.magma";
+load "src/quadratic_forms.magma";
+load "src/deg_2_algebra.magma";
+load "src/rational_M2D_algebra.magma";
+load "src/main.magma";
+load "src/test_functions.magma";
+
+testExplicitIsomorphism(3);

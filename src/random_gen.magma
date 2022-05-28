@@ -50,7 +50,7 @@ scrambleBasis:=function(A:d:=1,verbose:=false,M:=0)
 			M:=Matrix(L,[[Random(2) eq 0 select randomFld(L:d:=d) else 0: _ in [1..n]]: _ in [1..n]]);
 		until Determinant(M) ne 0;
 		if verbose then
-			printf "Scrambling the basis of %o. We're using the following matrix: \n%o\n",A,M;
+			printf "We apply a random linear map to our algebra. It is given by the following matrix:\n%o\n",M;
 		end if;
 	end if;
 	B,f:=ChangeBasis(A,[A!ElementToSequence(M[i]): i in [1..n]]);
@@ -62,6 +62,9 @@ The parameter d is the bound for the degree of the random entries of the matrix 
 randIsoMat:=function(L,n:d:=2,verbose:=false)
 	M:=MatrixAlgebra(L,n);
 	A1,g:=AssociativeAlgebra(M);
+	if verbose then
+		printf "In order to generate a random algebra isomorphic to a matrix algebra of degree %o over the field %o, we start by constructing exactly this algebra.\n",n,L;
+	end if;
 	A,f:=scrambleBasis(A1:d:=d,verbose:=verbose);
 	return A,g*f;
 end function;
