@@ -5,6 +5,9 @@ Magma implementation of our algorithm for computing an explicit isomorphism betw
 In order to try this code, simply type ```load "init.magma";```
 Then, you may try to use the functions from the file test_functions.magma to execute the various subroutines of the algorithm.
 
+## Benchmarks
+Some specific tests are available in the benchmarks repertory. To us one, simply load the corresponding file in Magma from the root directory of the repository. There is no need to load init.magma first. Since the output can be verbose, you will be prompted for the path to an output file. Leave the prompt empty to print results directly in the standard output instead.
+
 ## Bibliograpy
 Some references to the literature are given in the source code. Here is the list of references used. This is a subset of the bibliography of our article, which should be consulted for more details on the theoretical foundations of this implementation.
 

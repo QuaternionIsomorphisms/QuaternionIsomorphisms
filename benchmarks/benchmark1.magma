@@ -1,6 +1,8 @@
 print "We will benchmark the use of the function explicitIsomorphism on a degree 3 matrix algebra over the field K = F_5(T).";
 read filename, "Please indicate a path for recording the output of the computation. Note that the file will be overwritten. ";
-SetOutputFile(filename:Overwrite:=true);
+if filename ne "" then
+	SetOutputFile(filename:Overwrite:=true);
+end if;
 
 p:=5;
 n:=1;
