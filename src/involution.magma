@@ -177,10 +177,12 @@ end function;
 
 /*Input: An algebra A over Kext
 Output: A zero divisor in A or an involution of the second kind on A*/
-invSec:=function(A:Ofi:=0,Oinf:=0)
+invSec:=function(A:Ofi:=0,Oinf:=0:verbose:=false)
 	Cor,AxAs,AToAs,phiA,phiAs,phiCor,Ofi,Oinf:=corestriction(A:Ofi:=Ofi,Oinf:=Oinf);
-	e:=rankOneIdempotent(Cor:Ofi:=Ofi,Oinf:=Oinf);
-	print "We have succesfully computed a rank one idempotent in the corestriction of A!";
+	e:=rankOneIdempotent(Cor:Ofi:=Ofi,Oinf:=Oinf:verbose:=verbose);
+	if verbose then
+		print "We have succesfully computed a rank one idempotent in the corestriction of A!";
+	end if;
 	I:=rideal<AxAs | phiCor(1-e)>;
 	Inter:= I meet sub<AxAs | [phiA(x) : x in Basis(A)]>;
 	if Dimension(Inter) gt 0 then

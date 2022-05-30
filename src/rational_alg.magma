@@ -65,6 +65,7 @@ end function;
 
 /*Given an associative K-algebra A which is isomorphic to a 2x2 matrix algebra over K, returns a rank 1 idempotent element of A*/
 rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
+	if verbose then
 	if Ofi cmpeq 0 then
 		if verbose then
 			print "Timing the computation of MaximalOrderFinite(A):";
@@ -73,7 +74,12 @@ rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
 			Ofi:=MaximalOrderFinite(A);
 		end if;
 	else
-		Ofi:=MaximalOrder(Ofi);
+		if verbose then
+			print "Timing the computation of a maximal overorder of the order given as input.";
+			time Ofi:=MaximalOrder(Ofi);
+		else
+			Ofi:=MaximalOrder(Ofi);
+		end if;
 	end if;
 	if Oinf cmpeq 0 then
 		if verbose then
@@ -83,7 +89,10 @@ rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
 			Oinf:=MaximalOrderInfinite(A);
 		end if;
 	else 
-		Oinf:=MaximalOrder(Oinf);
+		if verbose then
+			print "Timing the computation of a maximal overorder of the order given as input.";
+			time Oinf:=MaximalOrder(Oinf);
+		end if;
 	end if;
 	C,f:=interOrders(A,Ofi,Oinf);
 	es:=[x @ f: x in orthSysOfPrimIdems(C)];

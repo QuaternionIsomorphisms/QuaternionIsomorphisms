@@ -190,9 +190,14 @@ end procedure;
 
 //Testing the whole algorithm
 //Does not terminate in reasonable time. The maximal order computation algorithm needs to be improved.
-completeTest:=procedure()
-	B1,B2:=randIsoQuatGentle(:verbose:=true);
-	f:=main(B1,B2);
+completeTest:=procedure(:Bs:=[])
+	if Bs eq [] then
+		B1,B2:=randIsoQuatGentle(:verbose:=true);
+	else
+		B1:=Bs[1];
+		B2:=Bs[2];
+	end if;
+	f:=main(B1,B2:verbose:=true);
 	print "We now have an output to the execution of our main function. We check that it is an algebra homomorphism from B1 to B2:";
 	print B1 eq Domain(f);
 	print B2 eq Codomain(f);
