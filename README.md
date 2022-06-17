@@ -14,6 +14,7 @@ On our machine, the test normally terminates in under 15 minutes.
 ### QuaternionSubalgebra.magma
 This file generates a random quadratic extension Kext of the field K = F_3(x). It then generates a random algebra A isomorphic to M_2(Kext) and computes a subalgebra AK of A that is a quaternion algebra over K.
 The technique used here is the novel idea from our work. In the context of our algorithm for computing explicit isomorphisms between quaternion algebra over Kext, it is untractable because it would involve computing a rank one idempotent in a 256 dimensional K-algebra. Here, we showcase the technique on the more modest input of a quaternion Kext-algebra, and therefore it is only needed to compute an idempotent in a 16 dimensional K-algebra.
+The timing for execution here may vary a lot. We recommend to abort and restart if it takes longer than 20 minutes (based on our observation, relative to the CPU we used).
 
 ## Usage
 It is also possible to interact with the code directly. Again, launch magma from the root directory of the repository and type ```load "init.magma";```
@@ -24,12 +25,9 @@ Please note that until more efficient computation of maximal order is available,
 Some references to the literature are given in the source code. Here is the list of references used. This is a subset of the bibliography of our article, which should be consulted for more details on the theoretical foundations of this implementation.
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//								Bibliography:												//
-//	[1] A. K. Lenstra - Factoring Multivariate Polynomials over Finite Fields, 1984											//
-//	[2] G. Ivanyos, P. Kutas, L. Rónyai - Computing Explicit Isomorphisms with Full Matrix Algebras over Fq(x), 2018						//
-//	[3] L.Rónyai - 	Computing the Structure of Finite Algebras, 1990												//
-//	[4] W.A de Graaf, G. Ivanyos, A. Küronya, L.Rónyai - Computing Levi Decompositions in Lie algebras, 1997							//
-//	[5] G.Ivanyos, P.Kutas, L.Rónyai - Explicit equivalence of quadratic forms over Fq(t), 2018									//
-//	[6] J.Gómez-Torrecillas, P.Kutas, F.J.Lobillo, G.Navarro - Primitive idempotents in central simple algebras over Fq(T) with applications to coding theory	//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+1. A. K. Lenstra - Factoring Multivariate Polynomials over Finite Fields, 1984
+2. G. Ivanyos, P. Kutas, L. Rónyai - Computing Explicit Isomorphisms with Full Matrix Algebras over Fq(x), 2018
+3. L.Rónyai - 	Computing the Structure of Finite Algebras, 1990
+4. W.A de Graaf, G. Ivanyos, A. Küronya, L.Rónyai - Computing Levi Decompositions in Lie algebras, 1997
+5. G.Ivanyos, P.Kutas, L.Rónyai - Explicit equivalence of quadratic forms over Fq(t), 2018
+6. J.Gómez-Torrecillas, P.Kutas, F.J.Lobillo, G.Navarro - Primitive idempotents in central simple algebras over Fq(T) with applications to coding theory
