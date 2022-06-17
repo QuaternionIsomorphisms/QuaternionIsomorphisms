@@ -21,7 +21,7 @@ It is also possible to interact with the code directly. Again, launch magma from
 Then, you may want to use the functions from the file test_functions.magma to see the execution of the various subroutines of the algorithm.
 Please note that until more efficient computation of maximal order is available, the whole algorithm will not terminate in a reasonable time.
 
-## Bibliograpy
+## Bibliography
 Some references to the literature are given in the source code. Here is the list of references used. This is a subset of the bibliography of our article, which should be consulted for more details on the theoretical foundations of this implementation.
 
 
