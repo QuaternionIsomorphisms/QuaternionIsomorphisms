@@ -2,9 +2,9 @@
 Magma implementation of our algorithm for computing an explicit isomorphism between quaternion algebras over a quadratic function field in odd characteristic.
 
 ## Prepared examples
-Taylored self contained example files executing key subroutines of the algorithm can be found in the examples/ directory. Simply load magma (make sure to load it from the root directory of the repository) and type ```load "examples/*nameofexamplefile*.magma";```  You will then be prompted for a path to an output file. If you leave this blank, the standard output will be used instead.  
+Tailored self contained example files executing key subroutines of the algorithm can be found in the examples/ directory. Simply load magma (make sure to load it from the root directory of the repository) and type ```load "examples/*nameofexamplefile*.magma";```  You will then be prompted for a path to an output file. If you leave this blank, the standard output will be used instead.  
 The subroutines tested here are the ones which are too slow for terminating with the input size needed for the algorithm. Hence we use smaller inputs here to showcase correctness of the algorithms and their implementation.  
-The taylored example files are the following:
+The tailored example files are the following:
 We give an estimate of how long the tests are expected to take. The timings given here were obtained using an Intel i7-7700 CPU with four cores at 3.60 GHz.
 
 ### RationalSplit.magma
