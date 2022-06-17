@@ -13,7 +13,7 @@ On our machine, the test normally terminates in under 15 minutes.
 
 ### QuaternionSubalgebra.magma
 This file generates a random quadratic extension Kext of the field K = F_3(x). It then generates a random algebra A isomorphic to M_2(Kext) and computes a subalgebra AK of A that is a quaternion algebra over K.
-The technique used here is the novel idea from our work. In the context of our algorithm for computing explicit isomorphisms between quaternion algebra over Kext, it is untractable because it would involve computing a rank one idempotent in a 256 dimensional K-algebra. Here, we showcase the technique on the more modest input of a quaternion Kext-algebra, and therefore it is only needed to compute an idempotent in a 16 dimensional K-algebra.
+The technique used here is the novel idea from our work. In the context of our algorithm for computing explicit isomorphisms between quaternion algebra over Kext, it is untractable because it would involve computing a rank one idempotent in a 256 dimensional K-algebra. Here, we showcase the technique on the more modest input of a quaternion Kext-algebra, and therefore it is only needed to compute an idempotent in a 16 dimensional K-algebra.  
 The timing for execution here may vary a lot. We recommend to abort and restart if it takes longer than 20 minutes (based on our observation, relative to the CPU we used).
 
 ## Usage
