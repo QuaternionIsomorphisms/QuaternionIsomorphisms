@@ -127,19 +127,25 @@ end function;
 
 /*Input: A central simple algebra A defined over L.
 Output: The corestriction of A as an associative algebra over K, the tensor product AxAs, a map from A to AxAs and a map from Cor(A) to A.*/
-corestriction:=function(A:Ofi:=0,Oinf:=0,computeOrders:=true)
+corestriction:=function(A:Ofi:=0,Oinf:=0,computeOrders:=true,verbose:=false)
 	if computeOrders then
+		T:=Time();
 		if Ofi cmpeq 0 then
 			Ofi:=MaximalOrderFinite(A);
-		else
+		elif Norm(Discriminant(Ofi)) ne 1 then
 			Ofi:=MaximalOrder(Ofi);
 		end if;
 		if Oinf cmpeq 0 then
 			Oinf:=MaximalOrderInfinite(A);
-		else
+		elif Norm(Discriminant(Oinf)) ne 1 then
 			Oinf:=MaximalOrder(Oinf);
 		end if;
+		T:=Time(T);
+		if verbose then
+			printf "Dealing with computing maximal orders of our algebra over Kext took %o seconds. We may now start the corestriction computation itself.\n",T;
+		end if;
 	end if;
+	T:=Time();
 	As,AToAs:=conjugAlg(A);
 	
 	if computeOrders then
@@ -153,6 +159,10 @@ corestriction:=function(A:Ofi:=0,Oinf:=0,computeOrders:=true)
 	switch:=hom<V -> V | &cat[[(sigma(k)*v) @ f: k in Basis(Kext)] where v is (((as @@ AToAs) @ phiA)*((a @ AToAs) @ phiAs)): as in Basis(As), a in Basis(A)]>;
 
 	Cor,phi,OCorFi,OCorInf:=descendAlgebra(AxAs,f,OfixOfis,OinfxOinfs,switch: computeOrders:=computeOrders);
+	T:=Time(T);
+	if verbose then
+		printf "Computing the corestriction took %o seconds, maximal orders computation excluded.\n",T;
+	end if;
 	return Cor,AxAs,AToAs,phiA,phiAs,phi,OCorFi,OCorInf;
 end function;
 
@@ -177,11 +187,17 @@ end function;
 
 /*Input: An algebra A over Kext
 Output: A zero divisor in A or an involution of the second kind on A*/
-invSec:=function(A:Ofi:=0,Oinf:=0:verbose:=false)
-	Cor,AxAs,AToAs,phiA,phiAs,phiCor,Ofi,Oinf:=corestriction(A:Ofi:=Ofi,Oinf:=Oinf);
-	e:=rankOneIdempotent(Cor:Ofi:=Ofi,Oinf:=Oinf:verbose:=verbose);
+invSec:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
+	Cor,AxAs,AToAs,phiA,phiAs,phiCor,Ofi,Oinf:=corestriction(A:Ofi:=Ofi,Oinf:=Oinf,verbose:=verbose);
 	if verbose then
-		print "We have succesfully computed a rank one idempotent in the corestriction of A!";
+		print "We finished the corestriction computation. The next step is to find a rank one idempotent element in the corestriction.";
+	end if;
+	print "We will first have to compute maximal orders in the corestriction, starting with the orders we descended from the maximal orders of A (see subsection 5.2 of the paper).";
+	T:=Time();
+	e:=rankOneIdempotent(Cor:Ofi:=Ofi,Oinf:=Oinf,verbose:=verbose);
+	T:=Time(T);
+	if verbose then
+		printf "We have succesfully computed a rank one idempotent in the corestriction of A! It took %o seconds, maximal orders computation included.\n",T;
 	end if;
 	I:=rideal<AxAs | phiCor(1-e)>;
 	Inter:= I meet sub<AxAs | [phiA(x) : x in Basis(A)]>;

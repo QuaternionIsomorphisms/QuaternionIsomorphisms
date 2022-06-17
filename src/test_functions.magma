@@ -47,13 +47,33 @@ isQuaternionBasis:=function(A,B)
 	return (B[1] eq One(A)) and (B[2]^2 in BaseField(A)) and (not B[2] in BaseField(A)) and (B[3]^2 in BaseField(A)) and (not B[3] in BaseField(A)) and (B[2]*B[3] eq -B[3]*B[2]) and (B[4] eq B[2]*B[3]);
 end function;
 
+//Computes random maximal orders in A given an explicit isomorphism f with a Matrix Algebra.
+//Useful for bypassing long computation time
+maxOrdersTrap:=function(A,f)
+	L:=BaseField(A);
+	_,n := IsSquare(Dimension(A));
+	M:=MatrixAlgebra(L,n);
+	Rfi := L eq K select R else Rext;
+	Rinf := L eq K select P else Pext;
+	repeat
+		Pfi := M![randomFld(L) : _ in [1..Dimension(A)]];
+	until IsUnit(Pfi);
+	repeat
+		Pinf := M![randomFld(L) : _ in [1..Dimension(A)]];
+	until IsUnit(Pinf);
+
+	Ofi := Order(Rfi,[(Pfi * x * Pfi^(-1)) @ f : x in Basis(M)]);
+	Oinf := Order(Rinf,[(Pinf * x * Pinf^(-1)) @ f : x in Basis(M)]);
+
+	return Ofi,Oinf;
+end function;
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //							Tests							//
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 testExplicitIsomorphism:=procedure(n:file:=0)
 	A:=randIsoMat(K,n:verbose:=true);
-	print "Timing the call to explicitIsomorphism:";
 	T:=Time();
 	f:=explicitIsomorphism(A:verbose:=true);
 	T:=Time(T);
@@ -62,11 +82,9 @@ testExplicitIsomorphism:=procedure(n:file:=0)
 	d:=n^2;
 	M:=Matrix(K,d,d,[ElementToSequence(x @ f): x in Basis(A)]);
 	printf "We check that the output is an isomorphism and get %o.\n",IsUnit(M);
-	printf "For reference, the output is given by the following matrix:\n%o\n",M;
 end procedure;
 	
 //invSec outputs either a zero divisor of A, or an involution of the second kind on A.
-//It won't terminate on the Magma online calculator for a degree 4 matrix algebra, because the dimension of the corestriction is then 256 and the structure constants table does not fit in the allowed memory (around 300MB).
 testInvSec:=function(n)
 	A:=randIsoMat(Kext,n);
 	printf "Timing the call to invSec";
@@ -188,6 +206,44 @@ testSolveQuintenaryForm:=procedure()
 	printf "Evaluation of the form at the solution gives : %o. Obviously, this should be 0.\n",&+[as[i]*(s^2): i->s in S];
 end procedure;
 
+testQuatSubalgebra:=procedure()
+print "We compute an algebra A isomorphic to the order 2 matrix algebra over Kext";
+A,f:=randIsoMat(Kext,2:verbose:=true);
+
+print "We use our knowledge of an explicit isomorphism to generate an involution of the first kind over A. This could also be done by finding a quaternion algebra presentation for A";
+invoFirstKind:=map<A -> A | x :-> Adjoint(x @@ f) @ f, y :-> Adjoint(y @@ f) @ f>;
+
+print "We now discard the explicit isomorphism. All following computations are done without this knowledge.";
+f := 0;
+
+print"We compute an involution of the second kind over A, and time the computation.";
+T:=Time();
+zeroDivisor,invoSecondKind:=invSec(A:verbose:=true);
+T:=Time(T);
+printf "Computing the involution took %o seconds.\n",T;
+
+if zeroDivisor ne 0 then
+	print "In fact, instead of an involution, we found a zero divisor in A. It is:";
+	print zeroDivisor;
+	print "We stop the computation here.";
+else
+	print "We now compute a K-subalgebra of A which is a quaternion algebra over K.";
+	T:=Time();
+	_,g:=restrictScalarsVS(A);
+	C,goUp,_,_:=descendAlgebra(A,g,0,0,Inverse(g) * invoFirstKind * invoSecondKind * g:computeOrders:=false);
+	T:=Time(T);
+	printf "We found a K-subalgebra C of A. This part of the computation took %o seconds.\n",T;
+	print "A K-basis of C is given by the following elements of A:";
+	for x in Basis(C) do
+		print x @ goUp;
+		print "---";
+	end for;
+	printf "We check that this K-subalgebra is simple and obtain %o.\n",IsSimple(C);
+end if;
+
+end procedure;
+	
+	
 //Testing the whole algorithm
 //Does not terminate in reasonable time. The maximal order computation algorithm needs to be improved.
 completeTest:=procedure(:Bs:=[])

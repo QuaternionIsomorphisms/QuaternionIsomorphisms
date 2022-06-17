@@ -42,16 +42,13 @@ randomFld:=function(L: nonZero:=false, d:=2)
 	end if;
 end function;
 
-scrambleBasis:=function(A:d:=1,verbose:=false,M:=0)
+scrambleBasis:=function(A:d:=1,M:=0)
 	n:=Dimension(A);
 	L:=BaseField(A);
 	if M cmpeq 0 then
 		repeat
 			M:=Matrix(L,[[Random(2) eq 0 select randomFld(L:d:=d) else 0: _ in [1..n]]: _ in [1..n]]);
 		until Determinant(M) ne 0;
-		if verbose then
-			printf "We apply a random linear map to our algebra. It is given by the following matrix:\n%o\n",M;
-		end if;
 	end if;
 	B,f:=ChangeBasis(A,[A!ElementToSequence(M[i]): i in [1..n]]);
 	return B,f,M;
@@ -62,10 +59,20 @@ The parameter d is the bound for the degree of the random entries of the matrix 
 randIsoMat:=function(L,n:d:=2,verbose:=false)
 	M:=MatrixAlgebra(L,n);
 	A1,g:=AssociativeAlgebra(M);
+
+	A,f:=scrambleBasis(A1:d:=d);
+
 	if verbose then
-		printf "In order to generate a random algebra isomorphic to a matrix algebra of degree %o over the field %o, we start by constructing exactly this algebra.\n",n,L;
+		printf "We generate a random algebra isomorphic to a matrix algebra of degree %o over %o.\n",n,L;
+		print "We have chosen a random basis for the matrix algebra. The matrix chosen for the basis are the following:";
+		for x in Basis(A) do
+			print x @@ (g * f);
+			print "---";
+		end for;
 	end if;
-	A,f:=scrambleBasis(A1:d:=d,verbose:=verbose);
+
+	print "We now return an algebra with structure constants corresponding to this basis of the matrix algebra.";
+
 	return A,g*f;
 end function;
 

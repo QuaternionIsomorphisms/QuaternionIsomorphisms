@@ -1,10 +1,10 @@
-print "We will benchmark the use of the function explicitIsomorphism on a degree 3 matrix algebra over the field K = F_5(T).";
-read filename, "Please indicate a path for recording the output of the computation. Note that the file will be overwritten. ";
+print "We will randomly generate an algebra isomorphic to the order 2 matrix algebra over a quadratic extension of the field F_3(x) and we will then use the corestriction method to find a subalgebra that is a quaternion algebra over F_3(x).";
+read filename, "Please indicate a path for recording the output of the computation. Note that the file will be overwritten. If you leave the field blank, the standard output will be used instead.";
 if filename ne "" then
 	SetOutputFile(filename:Overwrite:=true);
 end if;
 
-p:=5;
+p:=3;
 n:=1;
 deg:=2;
 
@@ -37,4 +37,5 @@ load "src/rational_M2D_algebra.magma";
 load "src/main.magma";
 load "src/test_functions.magma";
 
-testExplicitIsomorphism(3);
+testQuatSubalgebra();
+UnsetOutputFile();

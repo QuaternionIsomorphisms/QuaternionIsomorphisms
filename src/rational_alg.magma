@@ -65,7 +65,6 @@ end function;
 
 /*Given an associative K-algebra A which is isomorphic to a 2x2 matrix algebra over K, returns a rank 1 idempotent element of A*/
 rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
-	if verbose then
 	if Ofi cmpeq 0 then
 		if verbose then
 			print "Timing the computation of MaximalOrderFinite(A):";
@@ -75,7 +74,7 @@ rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
 		end if;
 	else
 		if verbose then
-			print "Timing the computation of a maximal overorder of the order given as input.";
+			print "Timing the computation of a maximal F_p[x]-order.";
 			time Ofi:=MaximalOrder(Ofi);
 		else
 			Ofi:=MaximalOrder(Ofi);
@@ -90,7 +89,7 @@ rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
 		end if;
 	else 
 		if verbose then
-			print "Timing the computation of a maximal overorder of the order given as input.";
+			print "Timing the computation of a maximal order at the infinite place.";
 			time Oinf:=MaximalOrder(Oinf);
 		end if;
 	end if;
@@ -110,6 +109,14 @@ end function;
 
 explicitIsomorphism:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
 	e:=rankOneIdempotent(A:Ofi:=Ofi,Oinf:=Oinf,verbose:=verbose);
+	if verbose then
+		print "We found a rank one idempotent element of the algebra. It has the following coordinates:";
+		for x in Coordinates(A,e) do
+			print x;
+			print "---";
+		end for;
+		print "We may now use this idempotent element to compute an explicit isomorphism to the matrix algebra.";
+	end if;
 	return idemToIso(A,e);
 end function;
 

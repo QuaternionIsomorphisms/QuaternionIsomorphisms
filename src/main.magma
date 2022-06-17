@@ -37,7 +37,7 @@ main:=function(B1,B2:verbose:=false)
 	Ofis:=[MaximalOrderFinite(B1),MaximalOrderFinite(B2)];
 	Oinfs:=[MaximalOrderInfinite(B1),MaximalOrderInfinite(B2)];
 	A,phi1,phi2,invo1stKind,Ofi,Oinf:=tensorProduct(B1,B2:quats:=true,Ofis:=Ofis,Oinfs:=Oinfs);
-	if verbose them
+	if verbose then
 		print "We have computed the tensor product A of B1 and B2, and now we approach the computational bottleneck:";
 		print "We will compute the corestriction of A and compute an explicit isomorphism from it to a matrix algebra.";
 	end if;
@@ -66,7 +66,7 @@ main:=function(B1,B2:verbose:=false)
 			if verbose then
 				print "AK happens to be split. We find a rank one idempotent and send it back up!";
 			end if;
-			e:=rankOneIdempotent(A:Ofi:=OfiAK,Oinf:=OinfAK:verbose:=verbose);
+			e:=rankOneIdempotent(A:Ofi:=OfiAK,Oinf:=OinfAK,verbose:=verbose);
 			e := e @ goUp;
 			return fromSplitToIsom(B1,B2,phi1,phi2,A,e) * stdInv(B2);
 		end if;
