@@ -1,8 +1,4 @@
 print "We will present the use of the function explicitIsomorphism on a degree 3 matrix algebra over the field K = F_5(T).";
-read filename, "Please indicate a path for recording the output of the computation. Note that the file will be overwritten. ";
-if filename ne "" then
-	SetOutputFile(filename:Overwrite:=true);
-end if;
 
 p:=5;
 n:=1;
@@ -37,4 +33,3 @@ load "src/main.magma";
 load "src/test_functions.magma";
 
 testExplicitIsomorphism(3);
-UnsetOutputFile();

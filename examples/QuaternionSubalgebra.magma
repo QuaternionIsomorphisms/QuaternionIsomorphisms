@@ -1,12 +1,8 @@
 print "We will randomly generate an algebra isomorphic to the order 2 matrix algebra over a quadratic extension of the field F_3(x) and we will then use the corestriction method to find a subalgebra that is a quaternion algebra over F_3(x).";
-read filename, "Please indicate a path for recording the output of the computation. Note that the file will be overwritten. If you leave the field blank, the standard output will be used instead.";
-if filename ne "" then
-	SetOutputFile(filename:Overwrite:=true);
-end if;
 
 p:=3;
 n:=1;
-deg:=2;
+deg:=3;
 
 q:=p^n;
 F:=GF(q);
@@ -38,4 +34,3 @@ load "src/main.magma";
 load "src/test_functions.magma";
 
 testQuatSubalgebra();
-UnsetOutputFile();

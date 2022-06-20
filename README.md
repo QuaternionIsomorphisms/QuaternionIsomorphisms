@@ -2,7 +2,7 @@
 Magma implementation of our algorithm for computing an explicit isomorphism between quaternion algebras over a quadratic function field in odd characteristic.
 
 ## Prepared examples
-Tailored self contained example files executing key subroutines of the algorithm can be found in the examples/ directory. Simply load magma (make sure to load it from the root directory of the repository) and type ```load "examples/*nameofexamplefile*.magma";```  You will then be prompted for a path to an output file. If you leave this blank, the standard output will be used instead.  
+Tailored self contained example files executing key subroutines of the algorithm can be found in the examples/ directory. Simply load magma (make sure to load it from the root directory of the repository) and type ```load "examples/*nameofexamplefile*.magma";```  
 The subroutines tested here are the ones which are too slow for terminating with the input size needed for the algorithm. Hence we use smaller inputs here to showcase correctness of the algorithms and their implementation.  
 The tailored example files are the following:
 We give an estimate of how long the tests are expected to take. The timings given here were obtained using an Intel i7-7700 CPU with four cores at 3.60 GHz.
@@ -14,7 +14,7 @@ On our machine, the test normally terminates in under 15 minutes.
 ### QuaternionSubalgebra.magma
 This file generates a random quadratic extension Kext of the field K = F_3(x). It then generates a random algebra A isomorphic to M_2(Kext) and computes a subalgebra AK of A that is a quaternion algebra over K.
 The technique used here is the novel idea from our work. In the context of our algorithm for computing explicit isomorphisms between quaternion algebra over Kext, it is untractable because it would involve computing a rank one idempotent in a 256 dimensional K-algebra. Here, we showcase the technique on the more modest input of a quaternion Kext-algebra, and therefore it is only needed to compute an idempotent in a 16 dimensional K-algebra.  
-The timing for execution here may vary a lot. We recommend to abort and restart if it takes longer than 20 minutes (based on our observation, relative to the CPU we used).
+The timing for execution here may vary a lot. We recommend aborting and restarting if it takes longer than 20 minutes (based on our observation, relative to the CPU we used).
 
 ## Usage
 It is also possible to interact with the code directly. Again, launch magma from the root directory of the repository and type ```load "init.magma";```
