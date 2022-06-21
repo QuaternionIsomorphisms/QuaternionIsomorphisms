@@ -95,7 +95,32 @@ rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
 			Oinf:=MaximalOrderInfinite(A);
 		end if;
 	end if;
+
+	if verbose then
+		print "A basis for our maximal F_q[T]-order is:";
+		for b in Basis(Ofi) do
+			print b;
+			print "___";
+		end for;
+
+		print "***********";
+		print "A basis of our maximal order at the infinite place is:";
+		for b in Basis(Oinf) do
+			print b;
+			print "____";
+		end for;
+	end if;
+
 	C,f:=interOrders(A,Ofi,Oinf);
+
+	if verbose then
+		print "We computed the intersection of our two maximal orders. We get a finite algebra with the following basis:";
+		for b in Basis(C) do
+			print b @ f;
+			print "______";
+		end for;
+	end if;
+
 	es:=[x @ f: x in orthSysOfPrimIdems(C)];
 	return es[Index([Dimension(sub<A | [e*a*e : a in Basis(A)]>) : e in es],1)];
 end function;
@@ -119,7 +144,17 @@ explicitIsomorphism:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
 		end for;
 		print "We may now use this idempotent element to compute an explicit isomorphism to the matrix algebra.";
 	end if;
-	return idemToIso(A,e);
+	iso:=idemToIso(A,e);
+
+	if verbose then
+		print "Applying the isomorphism we found to the basis elements of A, we find the following matrices:";
+		for b in Basis(A) do
+			print b @ iso;
+			print "______________";
+		end for;
+	end if;
+
+	return iso;
 end function;
 
 
