@@ -4,8 +4,8 @@ Magma implementation of our algorithm for computing an explicit isomorphism betw
 ## Prepared examples
 Tailored self contained example files executing key subroutines of the algorithm can be found in the examples/ directory. Simply load magma (make sure to load it from the root directory of the repository) and type ```load "examples/*nameofexamplefile*.magma";```  
 The subroutines tested here are the ones which are too slow for terminating with the input size needed for the algorithm. Hence we use smaller inputs here to showcase correctness of the algorithms and their implementation.  
+The timings given here were obtained using an Intel i7-7700 CPU with four cores at 3.60 GHz.  
 The tailored example files are the following:
-We give an estimate of how long the tests are expected to take. The timings given here were obtained using an Intel i7-7700 CPU with four cores at 3.60 GHz.
 
 ### RationalSplit.magma
 This file showcases the computation of an explicit isomorphism from a randomly generated algebra A to M_3(F_5(x)).  
