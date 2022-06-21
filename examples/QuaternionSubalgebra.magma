@@ -19,7 +19,8 @@ Pext:=IntegralClosure(P,Kext);
 Gal:=Automorphisms(Kext);
 sigma:=Gal[Index([s(x) eq x and &and[s(y) eq y: y in Basis(F)] and not IsIdentity(s) : s in Gal],true)];
 printf "K is the rational function field over the finite field GF(%o). Its characteristic is %o. \n",q,p;
-printf "We randomly generated a quadratic extension of K. It was formed by taking the square-root of a polynomial of degree %o.\n",deg;
+printf "We randomly generated a quadratic extension of K. It was formed by taking the square-root of %o.\n",D;
+printf "Note that in this file, the letter x denotes the variable of the rational function field K, while t denotes the square-root of %o.\n",D;
 
 load "src/utils.magma";
 load "src/random_gen.magma";

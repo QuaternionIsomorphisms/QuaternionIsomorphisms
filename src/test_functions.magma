@@ -212,6 +212,11 @@ A,f:=randIsoMat(Kext,2:verbose:=true);
 
 print "We use our knowledge of an explicit isomorphism to generate an involution of the first kind over A. This could also be done by finding a quaternion algebra presentation for A";
 invoFirstKind:=map<A -> A | x :-> Adjoint(x @@ f) @ f, y :-> Adjoint(y @@ f) @ f>;
+print "We give the images of the basis elements of A by this involution of the first kind:";
+for b in Basis(A) do
+	print b @ invoFirstKind;
+	print "_________";
+end for;
 
 print "We now discard the explicit isomorphism. All following computations are done without this knowledge.";
 f := 0;
@@ -222,12 +227,12 @@ zeroDivisor,invoSecondKind:=invSec(A:verbose:=true);
 T:=Time(T);
 printf "Computing the involution took %o seconds.\n",T;
 
+
 if zeroDivisor ne 0 then
-	print "In fact, instead of an involution, we found a zero divisor in A. It is:";
-	print zeroDivisor;
 	print "We stop the computation here.";
 else
-	print "We now compute a K-subalgebra of A which is a quaternion algebra over K.";
+
+	print "We now compute the K-subalgebra of A that is fixed by the composition of our involution of the first kind and that of the second kind.";
 	T:=Time();
 	_,g:=restrictScalarsVS(A);
 	C,goUp,_,_:=descendAlgebra(A,g,0,0,Inverse(g) * invoFirstKind * invoSecondKind * g:computeOrders:=false);
