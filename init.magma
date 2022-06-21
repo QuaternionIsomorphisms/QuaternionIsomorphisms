@@ -3,7 +3,7 @@
 p:=5;
 //The natural number n is the degree of the finite field underlying our base function field.
 n:=1;
-//The natural number deg is the degree of the irreducible polynomial we use for generating a quadratif extension of the rational function field K. Note that we could use any polynomial or rational function instead of an irreducible polynomial. We do so to reduce the number of ramified places in order to shorten an already lengthy execution.
+//The natural number deg is the degree of the irreducible polynomial we use for generating a quadratic extension of the rational function field K. Note that we could use any polynomial or rational function instead of an irreducible polynomial. We do so to reduce the number of ramified places in order to shorten an already lengthy execution.
 deg:=2;
 
 q:=p^n;
