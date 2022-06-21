@@ -91,6 +91,8 @@ rankOneIdempotent:=function(A:Ofi:=0,Oinf:=0,verbose:=false)
 		if verbose then
 			print "Timing the computation of a maximal order at the infinite place.";
 			time Oinf:=MaximalOrder(Oinf);
+		else
+			Oinf:=MaximalOrderInfinite(A);
 		end if;
 	end if;
 	C,f:=interOrders(A,Ofi,Oinf);
